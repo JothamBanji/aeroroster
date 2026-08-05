@@ -1,4 +1,4 @@
-const state={routes:[],baseRoutes:[],filtered:[],selected:null,page:1,pageSize:8,mode:'airline',timer:null,airports:{},activeMap:null,activeMarker:null,activeRouteLine:null,renderedActiveId:null};
+const state={routes:[],baseRoutes:[],filtered:[],selected:null,page:1,pageSize:8,mode:'airline',timer:null,airports:{},worldAirports:[],customFrom:null,customTo:null,activeMap:null,activeMarker:null,activeRouteLine:null,renderedActiveId:null};
 const $=id=>document.getElementById(id);
 const logoMap={
   'Saudia':'assets/logos/saudia-uploaded.png',
@@ -16,10 +16,11 @@ const aboutMap={
 };
 
 async function init(){
-  const [routeResponse,airportResponse]=await Promise.all([fetch('./data/routes.json'),fetch('./data/airports.json')]);
+  const [routeResponse,airportResponse,worldAirportResponse]=await Promise.all([fetch('./data/routes.json'),fetch('./data/airports.json'),fetch('./data/world-airports.json')]);
   if(!routeResponse.ok)throw new Error('Could not load route data.');
   state.baseRoutes=await routeResponse.json();
   state.airports=airportResponse.ok?await airportResponse.json():{};
+  state.worldAirports=worldAirportResponse.ok?await worldAirportResponse.json():[];
   state.routes=addReverseRoutes(state.baseRoutes);
   applyStoredSettings();bind();bindSettings();populateAirlines();
   const settings=getSettings();
@@ -48,9 +49,11 @@ function bind(){
   $('routeSearch').oninput=()=>{state.page=1;applyFilters();};
   $('airlineModeButton').onclick=()=>setMode('airline');
   $('customModeButton').onclick=()=>setMode('custom');
-  $('customFromSelect').onchange=updateCustomButton;
-  $('customToSelect').onchange=updateCustomButton;
-  $('swapCustomRoute').onclick=()=>{const a=$('customFromSelect').value;$('customFromSelect').value=$('customToSelect').value;$('customToSelect').value=a;updateCustomButton();};
+  $('customFromSearch').oninput=()=>searchWorldAirports('from');
+  $('customToSearch').oninput=()=>searchWorldAirports('to');
+  $('customFromSearch').onfocus=()=>searchWorldAirports('from');
+  $('customToSearch').onfocus=()=>searchWorldAirports('to');
+  $('swapCustomRoute').onclick=()=>{const a=state.customFrom;state.customFrom=state.customTo;state.customTo=a;renderSelectedCustomAirports();updateCustomButton();};
   $('useCustomRoute').onclick=createCustomRoute;
   $('viewRouteButton').onclick=()=>state.selected&&openRouteDialog(state.selected);
   $('simbriefQuickButton').onclick=()=>state.selected&&openSimbrief(state.selected);
@@ -96,37 +99,109 @@ function populateRouteSelect(){
 }
 
 function populateCustomAirports(){
-  const airline=$('airlineSelect').value;
-  const map=new Map();
-  state.routes.filter(r=>r.airline===airline).forEach(r=>{
-    map.set(r.fromIata,{iata:r.fromIata,icao:r.fromIcao,city:r.fromCity,airport:r.fromAirport});
-    map.set(r.toIata,{iata:r.toIata,icao:r.toIcao,city:r.toCity,airport:r.toAirport});
-  });
-  const airports=[...map.values()].sort((a,b)=>a.city.localeCompare(b.city));
-  const options=airports.map(a=>`<option value="${a.iata}">${a.iata} — ${escapeHtml(a.city)} (${escapeHtml(a.airport)})</option>`).join('');
-  $('customFromSelect').innerHTML=options;$('customToSelect').innerHTML=options;
-  if(airports.length>1){$('customFromSelect').value=airports[0].iata;$('customToSelect').value=airports[1].iata;}
+  state.customFrom=null;
+  state.customTo=null;
+  if($('customFromSearch'))$('customFromSearch').value='';
+  if($('customToSearch'))$('customToSearch').value='';
+  renderSelectedCustomAirports();
   updateCustomButton();
 }
 
+function searchWorldAirports(direction){
+  const input=direction==='from'?$('customFromSearch'):$('customToSearch');
+  const results=direction==='from'?$('customFromResults'):$('customToResults');
+  const query=input.value.trim().toLowerCase();
+
+  if(query.length<2){
+    results.classList.add('hidden');
+    results.innerHTML='';
+    return;
+  }
+
+  const matches=state.worldAirports
+    .filter(a=>`${a.ident} ${a.iata} ${a.name} ${a.city} ${a.country}`.toLowerCase().includes(query))
+    .slice(0,25);
+
+  results.innerHTML=matches.length
+    ? matches.map((a,i)=>`<button class="airport-result" type="button" data-index="${i}">
+        <strong>${escapeHtml(a.iata||a.ident)}</strong>
+        <span>${escapeHtml(a.name)}</span>
+        <small>${escapeHtml(a.ident)} · ${escapeHtml(a.city||a.country)}</small>
+      </button>`).join('')
+    : '<div class="airport-result-empty">No airports found.</div>';
+
+  results.classList.remove('hidden');
+
+  results.querySelectorAll('.airport-result').forEach(button=>{
+    button.onclick=()=>chooseWorldAirport(direction,matches[Number(button.dataset.index)]);
+  });
+}
+
+function chooseWorldAirport(direction,airport){
+  if(direction==='from'){
+    state.customFrom=airport;
+    $('customFromSearch').value=airport.iata||airport.ident;
+    $('customFromResults').classList.add('hidden');
+  }else{
+    state.customTo=airport;
+    $('customToSearch').value=airport.iata||airport.ident;
+    $('customToResults').classList.add('hidden');
+  }
+
+  renderSelectedCustomAirports();
+  updateCustomButton();
+}
+
+function renderSelectedCustomAirports(){
+  const render=a=>a
+    ? `<strong>${escapeHtml(a.iata||a.ident)}</strong><span>${escapeHtml(a.name)}</span><small>${escapeHtml(a.city||a.country)} · ${escapeHtml(a.ident)}</small>`
+    : 'No airport selected';
+
+  if($('customFromSelected'))$('customFromSelected').innerHTML=render(state.customFrom);
+  if($('customToSelected'))$('customToSelected').innerHTML=render(state.customTo);
+}
+
 function updateCustomButton(){
-  const valid=$('customFromSelect').value&&$('customToSelect').value&&$('customFromSelect').value!==$('customToSelect').value;
-  $('useCustomRoute').disabled=!valid;
+  $('useCustomRoute').disabled=!(state.customFrom&&state.customTo&&state.customFrom.ident!==state.customTo.ident);
 }
 
 function createCustomRoute(){
-  const airline=$('airlineSelect').value,aircraftIcao=$('aircraftSelect').value,from=$('customFromSelect').value,to=$('customToSelect').value;
-  if(!from||!to||from===to)return;
-  const source=state.routes.find(r=>r.airline===airline&&r.aircraftIcao===aircraftIcao)||state.routes.find(r=>r.airline===airline);
-  const fromInfo=findAirport(from),toInfo=findAirport(to);
-  const custom={...source,fromIata:fromInfo.iata,fromIcao:fromInfo.icao,fromCity:fromInfo.city,fromAirport:fromInfo.airport,toIata:toInfo.iata,toIcao:toInfo.icao,toCity:toInfo.city,toAirport:toInfo.airport,aircraftIcao,aircraft:aircraftName(airline,aircraftIcao),flightNumber:'',custom:true,direction:'custom'};
-  selectRoute(custom);openRouteDialog(custom);
+  const airline=$('airlineSelect').value;
+  const aircraftIcao=$('aircraftSelect').value;
+
+  if(!state.customFrom||!state.customTo||state.customFrom.ident===state.customTo.ident)return;
+
+  const source=state.routes.find(r=>r.airline===airline&&r.aircraftIcao===aircraftIcao)
+    ||state.routes.find(r=>r.airline===airline);
+
+  const from=state.customFrom;
+  const to=state.customTo;
+
+  const custom={
+    ...source,
+    fromIata:from.iata||from.ident,
+    fromIcao:from.ident,
+    fromCity:from.city||from.name,
+    fromAirport:from.name,
+    toIata:to.iata||to.ident,
+    toIcao:to.ident,
+    toCity:to.city||to.name,
+    toAirport:to.name,
+    aircraftIcao,
+    aircraft:aircraftName(airline,aircraftIcao),
+    flightNumber:'',
+    custom:true,
+    direction:'custom',
+    customCoordinates:{
+      from:{lat:Number(from.lat),lon:Number(from.lon)},
+      to:{lat:Number(to.lat),lon:Number(to.lon)}
+    }
+  };
+
+  selectRoute(custom);
+  openRouteDialog(custom);
 }
 
-function findAirport(iata){
-  for(const r of state.routes){if(r.fromIata===iata)return{iata,icao:r.fromIcao,city:r.fromCity,airport:r.fromAirport};if(r.toIata===iata)return{iata,icao:r.toIcao,city:r.toCity,airport:r.toAirport};}
-  return{iata,icao:iata,city:iata,airport:iata};
-}
 function aircraftName(airline,icao){return state.routes.find(r=>r.airline===airline&&r.aircraftIcao===icao)?.aircraft||icao}
 
 function applyFilters(){
@@ -311,7 +386,7 @@ function getFlightStatus(f,now,p){
 }
 function destroyActiveMap(){if(state.activeMap)state.activeMap.remove();state.activeMap=null;state.activeMarker=null;state.activeRouteLine=null}
 function setupActiveMap(f){if(typeof L==='undefined')return;const el=$('activeFlightMap');if(!el)return;const pts=getFlightMapPoints(f);if(pts.length<2){el.innerHTML='<div class="map-error">Airport coordinates are unavailable.</div>';return}state.activeMap=L.map(el);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'© OpenStreetMap contributors'}).addTo(state.activeMap);const ll=pts.map(p=>[p.lat,p.lon]);state.activeRouteLine=L.polyline(ll,{color:getComputedStyle(document.body).getPropertyValue('--accent').trim()||'#16db73',weight:4,opacity:.92}).addTo(state.activeMap);L.marker(ll[0]).addTo(state.activeMap).bindPopup(`<b>${escapeHtml(f.fromIata)}</b>`);L.marker(ll[ll.length-1]).addTo(state.activeMap).bindPopup(`<b>${escapeHtml(f.toIata)}</b>`);state.activeMarker=L.marker(ll[0],{icon:L.divIcon({className:'aircraft-map-marker',html:'✈',iconSize:[34,34],iconAnchor:[17,17]})}).addTo(state.activeMap);state.activeMap.fitBounds(state.activeRouteLine.getBounds(),{padding:[35,35]});$('mapSourceChip').textContent=f.simbriefRoute?.waypoints?.length?`SimBrief route · ${f.simbriefRoute.waypoints.length} waypoints`:'Estimated great-circle route';setTimeout(()=>state.activeMap?.invalidateSize(),100)}
-function getFlightMapPoints(f){if(f.simbriefRoute?.waypoints?.length>=2)return f.simbriefRoute.waypoints.filter(validMapPoint);const a=state.airports[f.fromIata],b=state.airports[f.toIata];if(!a||!b)return[];return createGreatCirclePoints({lat:+a.lat,lon:+a.lon,ident:f.fromIata},{lat:+b.lat,lon:+b.lon,ident:f.toIata},80)}
+function getFlightMapPoints(f){if(f.simbriefRoute?.waypoints?.length>=2)return f.simbriefRoute.waypoints.filter(validMapPoint);const a=f.customCoordinates?.from||state.airports[f.fromIata],b=f.customCoordinates?.to||state.airports[f.toIata];if(!a||!b)return[];return createGreatCirclePoints({lat:+a.lat,lon:+a.lon,ident:f.fromIata},{lat:+b.lat,lon:+b.lon,ident:f.toIata},80)}
 function validMapPoint(p){return Number.isFinite(+p.lat)&&Number.isFinite(+p.lon)}
 function createGreatCirclePoints(s,e,n){const out=[],a1=toRad(s.lat),o1=toRad(s.lon),a2=toRad(e.lat),o2=toRad(e.lon),d=2*Math.asin(Math.sqrt(Math.sin((a2-a1)/2)**2+Math.cos(a1)*Math.cos(a2)*Math.sin((o2-o1)/2)**2));if(!Number.isFinite(d)||d===0)return[s,e];for(let i=0;i<=n;i++){const f=i/n,A=Math.sin((1-f)*d)/Math.sin(d),B=Math.sin(f*d)/Math.sin(d),x=A*Math.cos(a1)*Math.cos(o1)+B*Math.cos(a2)*Math.cos(o2),y=A*Math.cos(a1)*Math.sin(o1)+B*Math.cos(a2)*Math.sin(o2),z=A*Math.sin(a1)+B*Math.sin(a2);out.push({lat:toDeg(Math.atan2(z,Math.sqrt(x*x+y*y))),lon:toDeg(Math.atan2(y,x)),ident:i===0?s.ident:i===n?e.ident:''})}return out}
 function updateActiveMap(f,p){

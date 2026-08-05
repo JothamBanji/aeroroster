@@ -72,10 +72,20 @@
                   <label id="standardRouteField" class="select-card"><span class="step-number">3</span><span class="select-copy"><small>Route</small><select id="routeSelect"></select></span></label>
                 </div>
                 <div id="customRouteFields" class="custom-route-fields hidden">
-                  <label class="custom-select-card"><small>Departure airport</small><select id="customFromSelect"></select></label>
+                  <div class="airport-search-field">
+                    <label for="customFromSearch">Departure airport</label>
+                    <input id="customFromSearch" type="search" placeholder="Search city, airport, IATA or ICAO" autocomplete="off">
+                    <div id="customFromResults" class="airport-search-results hidden"></div>
+                    <div id="customFromSelected" class="selected-airport-card">No departure airport selected</div>
+                  </div>
                   <button id="swapCustomRoute" class="swap-route-button" type="button" aria-label="Swap departure and arrival">⇄</button>
-                  <label class="custom-select-card"><small>Arrival airport</small><select id="customToSelect"></select></label>
-                  <button id="useCustomRoute" class="primary-action custom-use-button" type="button">Use custom route</button>
+                  <div class="airport-search-field">
+                    <label for="customToSearch">Arrival airport</label>
+                    <input id="customToSearch" type="search" placeholder="Search city, airport, IATA or ICAO" autocomplete="off">
+                    <div id="customToResults" class="airport-search-results hidden"></div>
+                    <div id="customToSelected" class="selected-airport-card">No arrival airport selected</div>
+                  </div>
+                  <button id="useCustomRoute" class="primary-action custom-use-button" type="button" disabled>Use custom route</button>
                 </div>
               </div>
 

@@ -71,3 +71,8 @@ Aircraft assignments and flight numbers can vary by date and operating schedule.
 - When the OFP contains TOC/TOD markers or an altitude profile, AeroRoster uses them to show Climb, Cruise and Descent.
 - Settings now include clearly visible **Confirm changes** buttons at the top and bottom.
 - Theme, accent colour and other preferences are not applied until Confirm changes is pressed.
+
+
+## Worldwide custom airport selection
+
+Custom Route mode now searches 72,454 non-closed airports and airfields worldwide. The selected airline controls the airline and aircraft only; it no longer restricts the available departure or arrival airports.

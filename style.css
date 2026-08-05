@@ -307,3 +307,24 @@ body.compact-layout .details-card,body.compact-layout .popular-card,body.compact
     width:100%;
   }
 }
+
+
+/* Worldwide custom airport search */
+.airport-search-field{position:relative;min-width:0}
+.airport-search-field>label{display:block;margin-bottom:7px;color:var(--muted);font-size:12px;font-weight:700}
+.airport-search-field>input{width:100%;min-height:46px;padding:0 12px;border:1px solid var(--line);border-radius:9px;color:var(--text);background:#071525}
+.airport-search-results{position:absolute;z-index:900;top:72px;right:0;left:0;max-height:330px;overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--panel);box-shadow:0 18px 44px rgba(0,0,0,.46)}
+.airport-result{display:grid;grid-template-columns:64px minmax(0,1fr);gap:2px 10px;width:100%;padding:11px 12px;border:0;border-bottom:1px solid var(--line);color:var(--text);text-align:left;background:transparent}
+.airport-result:hover,.airport-result:focus{background:color-mix(in srgb,var(--accent) 13%,transparent)}
+.airport-result strong{grid-row:1/3;align-self:center;color:var(--accent)}
+.airport-result span,.airport-result small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.airport-result span{font-weight:700}
+.airport-result small{color:var(--muted)}
+.airport-result-empty{padding:16px;color:var(--muted);text-align:center}
+.selected-airport-card{min-height:64px;margin-top:8px;padding:10px 12px;border:1px solid var(--line);border-radius:9px;color:var(--muted);background:rgba(255,255,255,.025)}
+.selected-airport-card strong,.selected-airport-card span,.selected-airport-card small{display:block}
+.selected-airport-card strong{color:var(--accent)}
+.selected-airport-card span{margin-top:3px;color:var(--text);font-weight:700}
+.selected-airport-card small{margin-top:3px;color:var(--muted)}
+.theme-light .airport-search-field>input{color:#0a1725;background:#fff}
+@media(max-width:900px){.airport-search-results{position:static;margin-top:8px}}
