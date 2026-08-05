@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Personal airline route picker for flight simulation">
+  <title>AeroRoster</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <div class="brand"><span>AR</span><div><b>AeroRoster</b><small>Personal flight-sim planner</small></div></div>
+    <nav><button class="nav active" data-view="discover">Discover</button><button class="nav" data-view="logbook">Logbook</button></nav>
+  </header>
+
+  <main>
+    <section id="discover" class="view active">
+      <div class="hero">
+        <div><p class="eyebrow">REALISTIC ROUTE DISCOVERY</p><h1>Choose your next flight.</h1>
+        <p>Filter by airline and aircraft, pick a route, then open it in SimBrief.</p></div>
+        <div class="stats"><div><b id="airlinesStat">0</b><span>Airlines</span></div><div><b id="routesStat">0</b><span>Routes</span></div><div><b id="aircraftStat">0</b><span>Aircraft</span></div></div>
+      </div>
+
+      <section class="panel filters">
+        <div class="panel-head"><div><p class="eyebrow">FILTERS</p><h2>Find a route</h2></div><button id="randomBtn" class="secondary">Surprise me</button></div>
+        <div class="filter-grid">
+          <label>Airline<select id="airline"><option value="">All airlines</option></select></label>
+          <label>Aircraft<select id="aircraft"><option value="">All aircraft</option></select></label>
+          <label>Departure<input id="departure" placeholder="JED, SIN, IST..."></label>
+          <label>Destination<input id="destination" placeholder="City, IATA or ICAO"></label>
+        </div>
+      </section>
+
+      <section class="results">
+        <div class="panel-head"><div><p class="eyebrow">AVAILABLE ROUTES</p><h2 id="resultTitle">All routes</h2></div><span id="countPill" class="pill">0 routes</span></div>
+        <div id="routeGrid" class="route-grid"></div>
+        <div id="empty" class="empty hidden"><div>✈</div><h3>No matching routes</h3><p>Change one or more filters.</p></div>
+      </section>
+    </section>
+
+    <section id="logbook" class="view">
+      <div class="hero compact"><div><p class="eyebrow">PERSONAL LOGBOOK</p><h1>Your completed flights.</h1><p>Saved only in this browser.</p></div><button id="clearLogbook" class="danger">Clear logbook</button></div>
+      <div class="log-stats"><div><span>Flights</span><b id="logFlights">0</b></div><div><span>Airlines</span><b id="logAirlines">0</b></div><div><span>Aircraft</span><b id="logAircraft">0</b></div></div>
+      <section class="panel"><div id="logList"></div><div id="logEmpty" class="empty"><div>📘</div><h3>No flights logged</h3><p>Mark a flight completed after flying it.</p></div></section>
+    </section>
+  </main>
+
+  <dialog id="modal"><button id="closeModal" class="close">×</button><div id="modalBody"></div></dialog>
+  <script src="app.js"></script>
+</body>
+</html>
