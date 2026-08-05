@@ -37,4 +37,4 @@ Edit `data/routes.json`. Duplicate an existing object and replace the airline, a
 
 ## Accuracy note
 
-The included data is a curated starter dataset for personal flight simulation, not a live airline schedule. Aircraft substitutions and seasonal changes are normal. Verify exact aircraft assignments before a flight when strict realism matters.
+The included data contains 413 curated route-aircraft combinations for personal flight simulation, not a live airline schedule. Aircraft substitutions and seasonal changes are normal. Verify exact aircraft assignments before a flight when strict realism matters.
