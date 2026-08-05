@@ -9,6 +9,9 @@ A static personal flight-simulator route picker for Saudia, Singapore Airlines, 
 - Random route selection
 - SimBrief export
 - Local browser logbook
+- Scheduled route mode with UTC date/time
+- Automatic waiting, departed and arrived status
+- Live countdown, ETA and progress path
 - Responsive layout
 
 ## Run locally

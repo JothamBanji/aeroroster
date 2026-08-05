@@ -10,7 +10,7 @@
 <body>
   <header>
     <div class="brand"><span>AR</span><div><b>AeroRoster</b><small>Personal flight-sim planner</small></div></div>
-    <nav><button class="nav active" data-view="discover">Discover</button><button class="nav" data-view="logbook">Logbook</button></nav>
+    <nav><button class="nav active" data-view="discover">Discover</button><button class="nav" data-view="flight">Active flight</button><button class="nav" data-view="logbook">Logbook</button></nav>
   </header>
 
   <main>
@@ -35,6 +35,27 @@
         <div class="panel-head"><div><p class="eyebrow">AVAILABLE ROUTES</p><h2 id="resultTitle">All routes</h2></div><span id="countPill" class="pill">0 routes</span></div>
         <div id="routeGrid" class="route-grid"></div>
         <div id="empty" class="empty hidden"><div>✈</div><h3>No matching routes</h3><p>Change one or more filters.</p></div>
+      </section>
+    </section>
+
+
+    <section id="flight" class="view">
+      <div class="hero compact">
+        <div>
+          <p class="eyebrow">LIVE SCHEDULED FLIGHT</p>
+          <h1>Your active route.</h1>
+          <p>The status and progress use real UTC time and continue after refreshing the page.</p>
+        </div>
+        <button id="cancelFlight" class="danger">Cancel active flight</button>
+      </div>
+
+      <section id="activeFlightPanel" class="panel active-flight-panel">
+        <div id="noActiveFlight" class="empty">
+          <div>🛫</div>
+          <h3>No active flight</h3>
+          <p>Select a route, choose a UTC departure date and time, then press Start route.</p>
+        </div>
+        <div id="activeFlightContent" class="hidden"></div>
       </section>
     </section>
 
