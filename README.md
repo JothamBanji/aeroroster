@@ -1,28 +1,22 @@
 # AeroRoster
 
-A static personal flight-simulator route picker for Saudia, Singapore Airlines, Turkish Airlines, Air India and Qatar Airways.
+A complete static flight-simulator route planner styled as a modern dark airline operations dashboard.
 
-## Included
+## Features
 
-- Airline and aircraft filtering
-- Departure and destination search
-- Random route selection
-- SimBrief export
-- Local browser logbook
-- Scheduled route mode with UTC date/time
-- Automatic waiting, departed and arrived status
-- Live countdown, ETA and progress path
-- Responsive layout
+- 413 route-aircraft combinations for Saudia, Singapore Airlines, Turkish Airlines, Air India and Qatar Airways
+- Airline sidebar and real/local logo assets
+- Aircraft and route selectors
+- Searchable, paginated route table
+- Route details panel and popular routes
+- Editable flight number
+- UTC departure scheduling and confirmation
+- SimBrief export with route, aircraft, airline, date, time, duration and flight number
+- Active-flight countdown and progress path
+- Browser-based logbook and statistics
+- Responsive desktop and mobile layout
 
 ## Run locally
-
-The app loads a JSON file, so do not simply double-click `index.html`.
-
-### VS Code
-Install the Live Server extension and choose **Open with Live Server**.
-
-### Python
-Inside the AeroRoster folder run:
 
 ```bash
 python -m http.server 8000
@@ -30,40 +24,10 @@ python -m http.server 8000
 
 Open `http://localhost:8000`.
 
-## Deploy
+## GitHub Pages
 
-Upload the entire AeroRoster folder to Netlify, or publish it using GitHub Pages.
+Upload the contents of this folder to the repository root, then enable **Settings → Pages → Deploy from a branch → main → /(root)**.
 
-## Add more routes
+## Data note
 
-Edit `data/routes.json`. Duplicate an existing object and replace the airline, aircraft and airport information.
-
-## Accuracy note
-
-The included data contains 413 curated route-aircraft combinations for personal flight simulation, not a live airline schedule. Aircraft substitutions and seasonal changes are normal. Verify exact aircraft assignments before a flight when strict realism matters.
-
-## Updated departure workflow
-
-1. Open a route.
-2. Review the default UTC departure time.
-3. Press **Modify** to change the date, time or estimated duration.
-4. Press **Depart**.
-5. Review the confirmation summary.
-6. Press **Confirm departure** to start the active flight.
-
-Local airline logo assets are stored in `assets/logos`.
-
-## Route scheduling flow
-
-Selecting an airline and aircraft only filters the route list. Departure date and time are not shown automatically.
-
-1. Select an airline and aircraft.
-2. Choose one of the available routes.
-3. Press **Schedule flight**.
-4. Review the default UTC departure.
-5. Press **Modify** to change the date, time or duration.
-6. Press **Depart**, review the summary and confirm departure.
-
-## Flight numbers and real logos
-
-The app now supports editable flight numbers, verified defaults for selected routes, SimBrief `fltnum` export, and actual airline logo assets. Flight numbers can vary by day and departure time, so verify the selected service when exact realism matters.
+Aircraft assignments and flight numbers can vary by date and operating schedule. The flight-number field remains editable so exact services can be entered before sending the route to SimBrief.
