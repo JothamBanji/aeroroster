@@ -55,3 +55,10 @@ Aircraft assignments and flight numbers can vary by date and operating schedule.
 - Airline logos now use fixed high-contrast tiles and no longer overlap or distort Route Finder text.
 - The scheduling editor includes a manual flight-number field.
 - The entered number is shown in confirmation, saved with the active flight and sent to SimBrief.
+
+
+## Map and SimBrief OFP integration
+- Explicit Save settings button.
+- SimBrief Pilot ID and latest OFP import.
+- Active Flight OpenStreetMap route with SimBrief waypoints when available.
+- Great-circle fallback when no matching OFP is imported.
