@@ -63,3 +63,14 @@ Selecting an airline and aircraft only filters the route list. Departure date an
 4. Review the default UTC departure.
 5. Press **Modify** to change the date, time or duration.
 6. Press **Depart**, review the summary and confirm departure.
+
+## SimBrief schedule export
+
+The SimBrief button now exports:
+
+- Selected UTC departure date
+- Selected UTC departure hour and minute
+- Estimated scheduled duration
+- Origin, destination, airline and aircraft
+
+This works with both the default schedule and a modified schedule. The active-flight SimBrief button uses the already confirmed schedule.

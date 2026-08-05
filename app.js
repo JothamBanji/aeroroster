@@ -237,8 +237,55 @@ function formatDuration(ms){
   return `${days?days+"d ":""}${String(hours).padStart(2,"0")}:${String(minutes).padStart(2,"0")}:${String(seconds).padStart(2,"0")}`;
 }
 function openSimbrief(x){
-  const p=new URLSearchParams({orig:x.fromIcao,dest:x.toIcao,type:x.aircraftIcao,airline:x.airlineIcao});
-  window.open(`https://dispatch.simbrief.com/options/custom?${p}`,"_blank","noopener,noreferrer");
+  let departureMs;
+  let durationMinutes;
+
+  // Active flights already contain their confirmed schedule.
+  if(Number.isFinite(Number(x.departureMs))){
+    departureMs=Number(x.departureMs);
+    durationMinutes=Number(x.durationMinutes)||0;
+  }else{
+    // In the route window, use the default schedule or any user modification.
+    const departureInput=$("departureUtc");
+    departureMs=departureInput?parseUtcInput(departureInput.value):Date.now()+60*60*1000;
+
+    const hoursInput=$("durationHours");
+    const minutesInput=$("durationMinutes");
+    durationMinutes=(hoursInput?Number(hoursInput.value):2)*60+
+      (minutesInput?Number(minutesInput.value):0);
+  }
+
+  if(!Number.isFinite(departureMs)){
+    alert("Choose a valid UTC departure date and time before opening SimBrief.");
+    return;
+  }
+
+  const departure=new Date(departureMs);
+  const scheduledHours=Math.floor(durationMinutes/60);
+  const scheduledMinutes=durationMinutes%60;
+
+  const p=new URLSearchParams({
+    orig:x.fromIcao,
+    dest:x.toIcao,
+    type:x.aircraftIcao,
+    airline:x.airlineIcao,
+    date:formatSimBriefDate(departure),
+    deph:String(departure.getUTCHours()).padStart(2,"0"),
+    depm:String(departure.getUTCMinutes()).padStart(2,"0"),
+    steh:String(scheduledHours),
+    stem:String(scheduledMinutes).padStart(2,"0")
+  });
+
+  window.open(
+    `https://dispatch.simbrief.com/options/custom?${p.toString()}`,
+    "_blank",
+    "noopener,noreferrer"
+  );
+}
+
+function formatSimBriefDate(date){
+  const months=["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+  return `${String(date.getUTCDate()).padStart(2,"0")}${months[date.getUTCMonth()]}${String(date.getUTCFullYear()).slice(-2)}`;
 }
 function complete(x){
   const log=getLog();log.unshift({...x,id:crypto.randomUUID?crypto.randomUUID():String(Date.now()),completedAt:new Date().toISOString()});
