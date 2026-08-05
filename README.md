@@ -52,3 +52,14 @@ The included data contains 413 curated route-aircraft combinations for personal 
 6. Press **Confirm departure** to start the active flight.
 
 Local airline logo assets are stored in `assets/logos`.
+
+## Route scheduling flow
+
+Selecting an airline and aircraft only filters the route list. Departure date and time are not shown automatically.
+
+1. Select an airline and aircraft.
+2. Choose one of the available routes.
+3. Press **Schedule flight**.
+4. Review the default UTC departure.
+5. Press **Modify** to change the date, time or duration.
+6. Press **Depart**, review the summary and confirm departure.

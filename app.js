@@ -64,39 +64,96 @@ function render(){
 function openRoute(x){
   state.selected=x;
   const defaultUtc=getDefaultUtcInput();
+
   els.modalBody.innerHTML=`<div class="modal-content">
-  <div class="route-brand-row">${airlineLogo(x.airline)}<span class="badge">${escapeHtml(x.aircraftIcao)}</span></div>
-  <p class="eyebrow">${x.airlineCode} · ${escapeHtml(x.airline)}</p><h2>${escapeHtml(x.fromCity)} to ${escapeHtml(x.toCity)}</h2>
-  <div class="modal-route"><div class="modal-airport"><b>${x.fromIata}</b><span>${x.fromIcao} · ${escapeHtml(x.fromCity)}</span></div><div>✈</div><div class="modal-airport"><b>${x.toIata}</b><span>${x.toIcao} · ${escapeHtml(x.toCity)}</span></div></div>
-  <div class="detail-grid"><div class="detail"><span>AIRLINE</span><b>${escapeHtml(x.airline)}</b></div><div class="detail"><span>AIRCRAFT</span><b>${escapeHtml(x.aircraft)}</b></div><div class="detail"><span>DEPARTURE</span><b>${escapeHtml(x.fromAirport)}</b></div><div class="detail"><span>ARRIVAL</span><b>${escapeHtml(x.toAirport)}</b></div></div>
-
-  <section class="departure-box">
-    <div class="departure-box-head">
-      <div><span class="section-label">SCHEDULED DEPARTURE</span><strong id="departureDisplay">${formatUtc(parseUtcInput(defaultUtc))}</strong></div>
-      <button id="modifyDeparture" class="text-button">Modify</button>
+    <div class="route-brand-row">
+      ${airlineLogo(x.airline)}
+      <span class="badge">${escapeHtml(x.aircraftIcao)}</span>
     </div>
-    <div id="departureEditor" class="schedule-grid hidden">
-      <label>Departure date and time (UTC)<div class="date-wrap"><input id="departureUtc" type="datetime-local" value="${defaultUtc}"></div></label>
-      <label>Estimated flight duration<div class="duration-row"><select id="durationHours">${durationOptions(0,18,2)}</select><select id="durationMinutes">${minuteOptions()}</select></div></label>
-    </div>
-  </section>
 
-  <p class="note">The default departure is one hour from now in UTC. Press Modify to choose another date, time, or duration.</p>
-  <div class="actions"><button id="departRoute" class="primary">Depart</button><button id="simbrief" class="secondary">Open in SimBrief</button><button id="complete" class="secondary">Mark completed</button></div>
-  <div id="confirmPanel" class="confirm-panel hidden"></div>
+    <p class="eyebrow">${x.airlineCode} · ${escapeHtml(x.airline)}</p>
+    <h2>${escapeHtml(x.fromCity)} to ${escapeHtml(x.toCity)}</h2>
+
+    <div class="modal-route">
+      <div class="modal-airport">
+        <b>${x.fromIata}</b>
+        <span>${x.fromIcao} · ${escapeHtml(x.fromCity)}</span>
+      </div>
+      <div>✈</div>
+      <div class="modal-airport">
+        <b>${x.toIata}</b>
+        <span>${x.toIcao} · ${escapeHtml(x.toCity)}</span>
+      </div>
+    </div>
+
+    <div class="detail-grid">
+      <div class="detail"><span>AIRLINE</span><b>${escapeHtml(x.airline)}</b></div>
+      <div class="detail"><span>AIRCRAFT</span><b>${escapeHtml(x.aircraft)}</b></div>
+      <div class="detail"><span>DEPARTURE</span><b>${escapeHtml(x.fromAirport)}</b></div>
+      <div class="detail"><span>ARRIVAL</span><b>${escapeHtml(x.toAirport)}</b></div>
+    </div>
+
+    <div id="routePrimaryActions" class="actions">
+      <button id="scheduleFlight" class="primary">Schedule flight</button>
+      <button id="simbrief" class="secondary">Open in SimBrief</button>
+      <button id="complete" class="secondary">Mark completed</button>
+    </div>
+
+    <section id="schedulePanel" class="departure-box hidden">
+      <div class="departure-box-head">
+        <div>
+          <span class="section-label">SCHEDULED DEPARTURE</span>
+          <strong id="departureDisplay">${formatUtc(parseUtcInput(defaultUtc))}</strong>
+        </div>
+        <button id="modifyDeparture" class="text-button">Modify</button>
+      </div>
+
+      <div id="departureEditor" class="schedule-grid hidden">
+        <label>
+          Departure date and time (UTC)
+          <div class="date-wrap">
+            <input id="departureUtc" type="datetime-local" value="${defaultUtc}">
+          </div>
+        </label>
+
+        <label>
+          Estimated flight duration
+          <div class="duration-row">
+            <select id="durationHours">${durationOptions(0,18,2)}</select>
+            <select id="durationMinutes">${minuteOptions()}</select>
+          </div>
+        </label>
+      </div>
+
+      <p class="note">
+        The default departure is one hour from now in UTC. Press Modify to choose another date,
+        time or estimated duration.
+      </p>
+
+      <button id="departRoute" class="primary schedule-depart-button">Depart</button>
+      <div id="confirmPanel" class="confirm-panel hidden"></div>
+    </section>
   </div>`;
 
-  const editor=$("departureEditor");
+  $("simbrief").onclick=()=>openSimbrief(x);
+  $("complete").onclick=()=>complete(x);
+
+  $("scheduleFlight").onclick=()=>{
+    $("schedulePanel").classList.remove("hidden");
+    $("routePrimaryActions").classList.add("hidden");
+  };
+
   $("modifyDeparture").onclick=()=>{
+    const editor=$("departureEditor");
     editor.classList.toggle("hidden");
     $("modifyDeparture").textContent=editor.classList.contains("hidden")?"Modify":"Done";
   };
+
   $("departureUtc").onchange=updateDeparturePreview;
   $("durationHours").onchange=updateDeparturePreview;
   $("durationMinutes").onchange=updateDeparturePreview;
-  $("simbrief").onclick=()=>openSimbrief(x);
-  $("complete").onclick=()=>complete(x);
   $("departRoute").onclick=()=>showDepartureConfirmation(x);
+
   els.modal.showModal();
 }
 function updateDeparturePreview(){

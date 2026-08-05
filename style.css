@@ -30,3 +30,7 @@ dialog{width:min(680px,calc(100% - 28px));padding:0;border:1px solid var(--line)
 .confirm-panel{margin-top:18px;padding:18px;border:1px solid #66d8ff44;border-radius:16px;background:#66d8ff0b}
 .confirm-head strong{display:block;margin-top:5px}.confirm-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:15px}.confirm-grid div{padding:12px;border:1px solid var(--line);border-radius:12px}.confirm-grid span,.confirm-grid b{display:block}.confirm-grid span{font-size:.68rem;color:var(--muted)}.confirm-grid b{font-size:.8rem;margin-top:6px}.confirm-button{width:100%;margin-top:14px}
 @media(max-width:620px){.airline-logo{width:155px}.airline-logo.compact{width:125px}.confirm-grid{grid-template-columns:1fr}.route-brand-row,.active-brand{align-items:flex-start}}
+
+.schedule-depart-button{width:100%;margin-top:15px}
+#schedulePanel{animation:scheduleReveal .2s ease}
+@keyframes scheduleReveal{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
