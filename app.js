@@ -247,7 +247,7 @@ function showConfirm(r){
   $('confirmBox').classList.remove('hidden');
   $('confirmDeparture').onclick=()=>startFlight({...r,flightNumber:flight},departureMs,duration,flight);
 }
-function startFlight(r,departureMs,durationMinutes,flightNumber){localStorage.setItem('aeroroster-active-flight',JSON.stringify({...r,departureMs,durationMinutes,etaMs:departureMs+durationMinutes*60000,flightNumber,id:crypto.randomUUID?.()||String(Date.now())}));$('routeDialog').close();renderActive();switchView('active');}
+function startFlight(r,departureMs,durationMinutes,flightNumber){localStorage.setItem('aeroroster-active-flight',JSON.stringify({...r,departureMs,durationMinutes,etaMs:departureMs+durationMinutes*60000,flightNumber,id:crypto.randomUUID?.()||String(Date.now())}));$('routeDialog').close();renderActive();switchView('active');if(getSettings().autoSimbrief)openSimbrief({...r,departureMs,durationMinutes,flightNumber});}
 function renderActive(){
   const c=$('activeFlightContainer'),f=getActive();if(!f){c.innerHTML='<div class="empty-message">No active flight. Select a route and schedule a departure.</div>';return}const now=Date.now(),progress=Math.max(0,Math.min(1,(now-f.departureMs)/(f.etaMs-f.departureMs)));let status,countdown;if(now<f.departureMs){status='Waiting at gate';countdown=formatCountdown(f.departureMs-now)}else if(now<f.etaMs){status='Departed';countdown=formatCountdown(f.etaMs-now)}else{status='Arrived';countdown='Complete'}
   c.innerHTML=`<div class="active-flight-card"><div class="active-head"><div><small>${escapeHtml(f.airline)} · ${escapeHtml(f.aircraft)}</small><h2>${f.fromIata} → ${f.toIata}</h2></div><span class="status-chip">${status}</span></div><div class="live-route"><div class="live-airport"><strong>${f.fromIata}</strong><span>${escapeHtml(f.fromCity)}</span></div><div class="progress"><div class="progress-fill" style="width:${progress*100}%"></div><div class="progress-plane" style="left:${progress*100}%">✈</div></div><div class="live-airport right"><strong>${f.toIata}</strong><span>${escapeHtml(f.toCity)}</span></div></div><div class="active-metrics"><div><span>Flight</span><strong>${escapeHtml(f.flightNumber||'Not available')}</strong></div><div><span>Status</span><strong>${status}</strong></div><div><span>Departure UTC</span><strong>${formatUtc(f.departureMs)}</strong></div><div><span>ETA UTC</span><strong>${formatUtc(f.etaMs)}</strong></div><div><span>Countdown</span><strong>${countdown}</strong></div></div><div class="dialog-actions"><button id="activeSimbrief" class="outline-button">Open SimBrief</button><button id="finishFlight" class="schedule-button">Finish & Log</button></div></div>`;
@@ -257,7 +257,7 @@ function finishFlight(f){const log=getLog();log.unshift({...f,completedAt:new Da
 function quickLog(r){const log=getLog();log.unshift({...r,id:crypto.randomUUID?.()||String(Date.now()),completedAt:new Date().toISOString()});localStorage.setItem('aeroroster-logbook',JSON.stringify(log));renderLogbook();renderDashboard();if($('routeDialog').open)$('routeDialog').close();switchView('logbook');}
 function renderLogbook(){const log=getLog();$('metricFlights').textContent=log.length;$('metricAirlines').textContent=new Set(log.map(x=>x.airline)).size;$('metricAircraft').textContent=new Set(log.map(x=>x.aircraftIcao)).size;$('emptyLogbook').classList.toggle('hidden',log.length>0);$('logbookList').innerHTML=log.map(x=>`<div class="log-row"><div><strong>${x.fromIata} → ${x.toIata}</strong><span>${escapeHtml(x.fromCity)} to ${escapeHtml(x.toCity)}</span></div><div><strong>${escapeHtml(x.airline)}</strong><span>${escapeHtml(x.flightNumber||x.airlineCode)}</span></div><div><strong>${escapeHtml(x.aircraftIcao)}</strong><span>${new Date(x.completedAt).toLocaleString()}</span></div><button data-id="${x.id}">Delete</button></div>`).join('');document.querySelectorAll('#logbookList button').forEach(b=>b.onclick=()=>{localStorage.setItem('aeroroster-logbook',JSON.stringify(getLog().filter(x=>x.id!==b.dataset.id)));renderLogbook();renderDashboard();});}
 function renderDashboard(){const log=getLog();$('dashboardMetrics').innerHTML=`<div><span>Routes available</span><strong>${state.routes.length||0}</strong></div><div><span>Flights completed</span><strong>${log.length}</strong></div><div><span>Airlines flown</span><strong>${new Set(log.map(x=>x.airline)).size}</strong></div>`;$('statisticsContent').innerHTML=`<div class="metric-row"><div><span>Unique aircraft</span><strong>${new Set(log.map(x=>x.aircraftIcao)).size}</strong></div><div><span>Unique destinations</span><strong>${new Set(log.map(x=>x.toIata)).size}</strong></div><div><span>Active flight</span><strong>${getActive()?'1':'0'}</strong></div></div>`;}
-function switchView(name){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active-view'));const map={finder:'finderView',active:'activeView',logbook:'logbookView',dashboard:'dashboardView',statistics:'statisticsView',settings:'settingsView'};$(map[name]||'finderView').classList.add('active-view');document.querySelectorAll('.side-link').forEach(b=>b.classList.toggle('active',b.dataset.view===name));$('sidebar').classList.remove('open');window.scrollTo({top:0,behavior:'smooth'});}
+function switchView(name){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active-view'));const map={finder:'finderView',active:'activeView',logbook:'logbookView',dashboard:'dashboardView',statistics:'statisticsView',settings:'settingsView'};$(map[name]||'finderView').classList.add('active-view');document.querySelectorAll('.side-link').forEach(b=>b.classList.toggle('active',b.dataset.view===name));$('sidebar').classList.remove('open');if(name==='settings')renderSettingsSummary();window.scrollTo({top:0,behavior:'smooth'});}
 function openSimbrief(r){
   const departureMs=Number(r.departureMs)||parseUtc($('departureUtc')?.value||defaultUtcInput());
   const duration=Number(r.durationMinutes)||
@@ -288,10 +288,10 @@ function durationTotal(r){const seed=(r.fromIata.charCodeAt(0)+r.toIata.charCode
 function durationHours(r){return Math.floor(durationTotal(r)/60)}function durationMinutes(r){return Math.round((durationTotal(r)%60)/15)*15%60}
 function hourOptions(selected){let h='';for(let i=0;i<=18;i++)h+=`<option value="${i}" ${i===selected?'selected':''}>${i} hour${i===1?'':'s'}</option>`;return h}
 function minuteOptions(selected){return [0,15,30,45].map(v=>`<option value="${v}" ${v===selected?'selected':''}>${String(v).padStart(2,'0')} min</option>`).join('')}
-function defaultUtcInput(){const d=new Date(Date.now()+3600000);return `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}T${String(d.getUTCHours()).padStart(2,'0')}:${String(d.getUTCMinutes()).padStart(2,'0')}`}
+function defaultUtcInput(){const settings=getSettings();const d=new Date(Date.now()+Number(settings.departureOffset||60)*60000);return `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}T${String(d.getUTCHours()).padStart(2,'0')}:${String(d.getUTCMinutes()).padStart(2,'0')}`}
 function parseUtc(v){const m=String(v).match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/);return m?Date.UTC(+m[1],+m[2]-1,+m[3],+m[4],+m[5]):NaN}
-function formatUtc(ms){return new Intl.DateTimeFormat('en-GB',{timeZone:'UTC',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date(ms))+' UTC'}
-function formatCountdown(ms){const s=Math.max(0,Math.floor(ms/1000)),h=Math.floor(s/3600),m=Math.floor(s%3600/60),sec=s%60;return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`}
+function formatUtc(ms){const settings=getSettings();const local=settings.timeZone==='local';return new Intl.DateTimeFormat('en-GB',{timeZone:local?undefined:'UTC',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date(ms))+(local?' local':' UTC')}
+function formatCountdown(ms){const settings=getSettings();const s=Math.max(0,Math.floor(ms/1000)),h=Math.floor(s/3600),m=Math.floor(s%3600/60),sec=s%60;return settings.showSeconds?`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`:`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`}
 function simbriefDate(d){return `${String(d.getUTCDate()).padStart(2,'0')}${['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'][d.getUTCMonth()]}${String(d.getUTCFullYear()).slice(-2)}`}
 function displayFlightNumber(r){return r.flightNumber||'Not available'}
 function normalizeFlight(v){return String(v||'').trim().toUpperCase().replace(/\s+/g,'')}
@@ -300,4 +300,38 @@ function shortAirport(v){return String(v).replace('International','Intl').slice(
 function getLog(){try{return JSON.parse(localStorage.getItem('aeroroster-logbook')||'[]')}catch{return[]}}
 function getActive(){try{return JSON.parse(localStorage.getItem('aeroroster-active-flight')||'null')}catch{return null}}
 function escapeHtml(v){return String(v??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#039;')}
+
+function getSettings(){
+  const defaults={theme:'dark',accent:'green',compact:false,timeZone:'utc',departureOffset:60,showSeconds:true,routeMode:'airline',autoSimbrief:false,rememberAirline:true};
+  try{return {...defaults,...JSON.parse(localStorage.getItem('aeroroster-settings')||'{}')}}catch{return defaults}
+}
+function saveSettings(next){localStorage.setItem('aeroroster-settings',JSON.stringify({...getSettings(),...next}));applyStoredSettings();renderSettingsSummary();}
+function applyStoredSettings(){
+  const s=getSettings();
+  document.body.classList.remove('theme-midnight','theme-light','accent-blue','accent-purple','accent-orange','compact-layout');
+  if(s.theme==='midnight')document.body.classList.add('theme-midnight');
+  if(s.theme==='light')document.body.classList.add('theme-light');
+  if(s.accent!=='green')document.body.classList.add(`accent-${s.accent}`);
+  if(s.compact)document.body.classList.add('compact-layout');
+  const utc=document.querySelector('.utc-chip');if(utc)utc.textContent=s.timeZone==='local'?'◷ LOCAL':'◷ UTC';
+}
+function bindSettings(){
+  const ids=['settingTheme','settingAccent','settingCompact','settingTimeZone','settingDepartureOffset','settingSeconds','settingRouteMode','settingAutoSimbrief','settingRememberAirline'];
+  ids.forEach(id=>{const el=$(id);if(!el)return;el.onchange=()=>{const update={theme:$('settingTheme').value,accent:$('settingAccent').value,compact:$('settingCompact').checked,timeZone:$('settingTimeZone').value,departureOffset:Number($('settingDepartureOffset').value),showSeconds:$('settingSeconds').checked,routeMode:$('settingRouteMode').value,autoSimbrief:$('settingAutoSimbrief').checked,rememberAirline:$('settingRememberAirline').checked};saveSettings(update);if(id==='settingRouteMode')setMode(update.routeMode);};});
+  $('resetSettings').onclick=()=>{if(confirm('Reset all AeroRoster preferences to their defaults?')){localStorage.removeItem('aeroroster-settings');applyStoredSettings();renderSettingsSummary();}};
+  $('clearActiveFlightSetting').onclick=()=>{if(confirm('Clear the active flight?')){localStorage.removeItem('aeroroster-active-flight');renderActive();renderDashboard();renderSettingsSummary();}};
+  $('clearLogbookSetting').onclick=()=>{if(confirm('Clear every flight in the logbook?')){localStorage.removeItem('aeroroster-logbook');renderLogbook();renderDashboard();renderSettingsSummary();}};
+}
+function renderSettingsSummary(){
+  const s=getSettings();
+  const values={settingTheme:s.theme,settingAccent:s.accent,settingTimeZone:s.timeZone,settingDepartureOffset:String(s.departureOffset),settingRouteMode:s.routeMode};
+  Object.entries(values).forEach(([id,value])=>{if($(id))$(id).value=value;});
+  if($('settingCompact'))$('settingCompact').checked=!!s.compact;
+  if($('settingSeconds'))$('settingSeconds').checked=!!s.showSeconds;
+  if($('settingAutoSimbrief'))$('settingAutoSimbrief').checked=!!s.autoSimbrief;
+  if($('settingRememberAirline'))$('settingRememberAirline').checked=!!s.rememberAirline;
+  if($('settingsFlightCount'))$('settingsFlightCount').textContent=getLog().length;
+  if($('settingsActiveStatus'))$('settingsActiveStatus').textContent=getActive()?'Scheduled':'None';
+}
+
 init().catch(error=>{console.error(error);document.body.innerHTML='<p style="padding:30px">The route data could not be loaded. Run the site through GitHub Pages or a local server.</p>'});

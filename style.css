@@ -195,3 +195,68 @@ select,select option{background:#0b1a27!important;color:#f3f7f9!important;color-
     grid-template-columns:1fr;
   }
 }
+
+
+/* Route Finder collision fix */
+.finder-hero{min-height:0!important;padding:26px 28px 24px!important;overflow:visible!important}
+.finder-hero-top{display:grid;grid-template-columns:minmax(0,1fr) minmax(220px,340px);align-items:center;gap:24px}
+.hero-copy{position:relative;z-index:2;min-width:0}
+.hero-copy h2{font-size:clamp(30px,3vw,42px)!important;line-height:1.05}
+.hero-copy p{max-width:560px;font-size:16px;line-height:1.45}
+.aircraft-art{position:static!important;display:grid!important;place-items:center;width:100%!important;height:auto!important;transform:none!important;opacity:.88;color:#d9d6ca}
+.aircraft-art svg{display:block;width:min(100%,320px);height:auto;filter:drop-shadow(0 10px 13px rgba(0,0,0,.5))}
+.select-row{position:static!important;left:auto!important;right:auto!important;bottom:auto!important;margin-top:16px;grid-template-columns:repeat(3,minmax(0,1fr))!important}
+.route-mode-switch{margin:18px 0 0!important}
+.select-card{min-width:0;height:76px}
+.select-copy select{display:block;min-width:0;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* Settings page */
+.settings-view{padding:6px 0 30px}
+.settings-heading{margin-top:10px}
+.settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.settings-card{padding:20px;border:1px solid var(--line);border-radius:14px;background:linear-gradient(145deg,rgba(8,20,34,.98),rgba(4,13,23,.98));box-shadow:var(--shadow)}
+.settings-card-heading{display:flex;align-items:flex-start;gap:13px;padding-bottom:16px;border-bottom:1px solid var(--line)}
+.settings-card-heading h3{margin:0;font-size:18px}
+.settings-card-heading p{margin:5px 0 0;color:var(--muted);font-size:13px;line-height:1.45}
+.settings-icon{display:grid;place-items:center;width:38px;height:38px;flex:0 0 38px;border:1px solid color-mix(in srgb,var(--green) 45%,transparent);border-radius:10px;background:color-mix(in srgb,var(--green) 13%,transparent);color:var(--green);font-size:19px}
+.settings-field{display:grid;grid-template-columns:minmax(130px,.8fr) minmax(170px,1.2fr);align-items:center;gap:18px;padding:15px 0;border-bottom:1px solid var(--line)}
+.settings-field>span{font-weight:600;color:#e7edf5}
+.settings-field select{width:100%;height:43px;padding:0 12px;border:1px solid #30445a;border-radius:9px;background:#071321!important}
+.settings-toggle{display:flex;align-items:flex-start;gap:12px;padding:15px 0;border-bottom:1px solid var(--line);cursor:pointer}
+.settings-toggle input{width:18px;height:18px;flex:0 0 18px;margin-top:2px;accent-color:var(--green)}
+.settings-toggle b,.settings-toggle small{display:block}
+.settings-toggle b{color:#eef3f9}
+.settings-toggle small{margin-top:4px;color:var(--muted);font-size:12px;line-height:1.45}
+.outline-settings-button{padding:10px 14px;border:1px solid #33465d;border-radius:9px;background:#0a1727;color:#fff}
+.data-summary{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:16px 0}
+.data-summary>div{padding:14px;border:1px solid var(--line);border-radius:10px;background:#091625}
+.data-summary span,.data-summary strong{display:block}.data-summary span{font-size:12px;color:var(--muted)}.data-summary strong{margin-top:5px;font-size:20px}
+.settings-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.settings-actions button{min-height:43px;border:1px solid #34475e;border-radius:9px;background:#0a1727;color:#fff}
+.settings-actions .danger-setting-button{border-color:#ff748b55;background:#ff748b10;color:#ff8ca0}
+.settings-note{margin:14px 0 0;color:var(--muted);font-size:12px;line-height:1.5}
+
+body.theme-midnight{background:radial-gradient(circle at 62% 0,#241843 0,transparent 28%),linear-gradient(135deg,#04030a,#10091c 58%,#030207)}
+body.theme-light{--text:#152033;--muted:#58677a;--line:rgba(20,43,69,.16);background:#eef3f8;color:var(--text)}
+body.theme-light .sidebar{background:linear-gradient(180deg,#f8fbff,#eaf1f7);border-color:#ccd8e4}
+body.theme-light .main-area,body.theme-light main{color:#152033}
+body.theme-light .finder-card,body.theme-light .details-card,body.theme-light .popular-card,body.theme-light .about-card,body.theme-light .content-card,body.theme-light .settings-card{background:#fff;border-color:#d4dee8;box-shadow:0 12px 30px rgba(34,54,79,.09)}
+body.theme-light .finder-hero{background:linear-gradient(145deg,#e6f0fa,#f8fbff);border-color:#d4dee8}
+body.theme-light .hero-copy p,body.theme-light .page-heading p,body.theme-light .settings-card-heading p,body.theme-light .settings-toggle small,body.theme-light .settings-note{color:#627186}
+body.theme-light .select-card,body.theme-light .search-box,body.theme-light .custom-select-card,body.theme-light .route-table-wrap,body.theme-light .settings-field select,body.theme-light .settings-actions button,body.theme-light .data-summary>div{background:#f5f8fb!important;border-color:#ccd8e4;color:#152033}
+body.theme-light select,body.theme-light input,body.theme-light textarea{color-scheme:light!important;background:#f5f8fb!important;color:#152033!important;-webkit-text-fill-color:#152033!important}
+body.theme-light select option{background:#fff!important;color:#152033!important;-webkit-text-fill-color:#152033!important}
+body.theme-light .side-link,body.theme-light .airline-link{color:#334459}
+body.theme-light .topbar{color:#152033}
+body.theme-light .settings-toggle b,body.theme-light .settings-field>span{color:#18263a}
+
+body.accent-blue{--green:#48b8ff;--green2:#138bd1}
+body.accent-purple{--green:#b58cff;--green2:#7b4dcc}
+body.accent-orange{--green:#ffad55;--green2:#d56d12}
+body.compact-layout .route-table td{padding-top:6px;padding-bottom:6px}
+body.compact-layout .finder-hero{padding-top:18px!important;padding-bottom:18px!important}
+body.compact-layout .select-card{height:66px}
+body.compact-layout .details-card,body.compact-layout .popular-card,body.compact-layout .about-card{padding:14px}
+
+@media(max-width:980px){.finder-hero-top{grid-template-columns:1fr}.aircraft-art{display:none!important}.select-row{grid-template-columns:1fr 1fr!important}.select-row .select-card:last-child{grid-column:1/-1}.settings-grid{grid-template-columns:1fr}}
+@media(max-width:620px){.select-row{grid-template-columns:1fr!important}.select-row .select-card:last-child{grid-column:auto}.settings-field{grid-template-columns:1fr;gap:8px}.settings-actions,.data-summary{grid-template-columns:1fr}}

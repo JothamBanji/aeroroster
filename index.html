@@ -52,8 +52,15 @@
           <div class="finder-layout">
             <section class="finder-card">
               <div class="finder-hero">
-                <div class="hero-copy"><h2>Route Finder</h2><p>Choose airline, aircraft and route to start your journey</p></div>
-                <div class="aircraft-art" aria-hidden="true"><span class="wing left"></span><span class="fuselage">✈</span><span class="wing right"></span></div>
+                <div class="finder-hero-top">
+                  <div class="hero-copy"><h2>Route Finder</h2><p>Choose airline, aircraft and route to start your journey</p></div>
+                  <div class="aircraft-art" aria-hidden="true">
+                    <svg viewBox="0 0 320 120" role="img" aria-label="Aircraft illustration">
+                      <path d="M160 14 176 52 294 74 292 83 177 70 168 102 192 111 190 117 160 111 130 117 128 111 152 102 143 70 28 83 26 74 144 52Z" fill="currentColor"/>
+                      <path d="M160 12v100" stroke="currentColor" stroke-width="4" stroke-linecap="round" opacity=".72"/>
+                    </svg>
+                  </div>
+                </div>
                 <div class="route-mode-switch" role="group" aria-label="Route mode">
                   <button id="airlineModeButton" class="mode-button active" type="button">Airline routes</button>
                   <button id="customModeButton" class="mode-button" type="button">Custom route</button>
@@ -113,7 +120,42 @@
 
         <section id="dashboardView" class="view simple-view"><h2>Dashboard</h2><p>Your route statistics and recent flights appear here.</p><div id="dashboardMetrics" class="metric-row"></div></section>
         <section id="statisticsView" class="view simple-view"><h2>Statistics</h2><p>Flight and route statistics from this browser.</p><div id="statisticsContent" class="content-card"></div></section>
-        <section id="settingsView" class="view simple-view"><h2>Settings</h2><p>All times are handled in UTC. Data is stored locally in your browser.</p></section>
+        <section id="settingsView" class="view settings-view">
+          <div class="page-heading settings-heading">
+            <div><span>PREFERENCES</span><h2>Settings</h2><p>Personalize the planner. Settings are saved in this browser.</p></div>
+            <button id="resetSettings" class="outline-settings-button" type="button">Reset defaults</button>
+          </div>
+
+          <div class="settings-grid">
+            <section class="settings-card">
+              <div class="settings-card-heading"><div class="settings-icon">◐</div><div><h3>Appearance</h3><p>Control the dashboard’s visual style.</p></div></div>
+              <label class="settings-field"><span>Theme</span><select id="settingTheme"><option value="dark">Dark</option><option value="midnight">Midnight</option><option value="light">Light</option></select></label>
+              <label class="settings-field"><span>Accent colour</span><select id="settingAccent"><option value="green">Aviation green</option><option value="blue">Sky blue</option><option value="purple">Royal purple</option><option value="orange">Sunset orange</option></select></label>
+              <label class="settings-toggle"><input id="settingCompact" type="checkbox"><span><b>Compact layout</b><small>Reduce spacing in route tables and cards.</small></span></label>
+            </section>
+
+            <section class="settings-card">
+              <div class="settings-card-heading"><div class="settings-icon">◷</div><div><h3>Time and scheduling</h3><p>Choose how departure times are displayed.</p></div></div>
+              <label class="settings-field"><span>Time display</span><select id="settingTimeZone"><option value="utc">UTC</option><option value="local">Local device time</option></select></label>
+              <label class="settings-field"><span>Default departure offset</span><select id="settingDepartureOffset"><option value="30">30 minutes from now</option><option value="60">1 hour from now</option><option value="120">2 hours from now</option><option value="180">3 hours from now</option></select></label>
+              <label class="settings-toggle"><input id="settingSeconds" type="checkbox" checked><span><b>Show countdown seconds</b><small>Display seconds in active-flight countdowns.</small></span></label>
+            </section>
+
+            <section class="settings-card">
+              <div class="settings-card-heading"><div class="settings-icon">✈</div><div><h3>Flight planning</h3><p>Set useful route-planning defaults.</p></div></div>
+              <label class="settings-field"><span>Default route mode</span><select id="settingRouteMode"><option value="airline">Airline routes</option><option value="custom">Custom route</option></select></label>
+              <label class="settings-toggle"><input id="settingAutoSimbrief" type="checkbox"><span><b>Open SimBrief after confirmation</b><small>Automatically launch SimBrief when a flight is started.</small></span></label>
+              <label class="settings-toggle"><input id="settingRememberAirline" type="checkbox" checked><span><b>Remember selected airline</b><small>Restore the last airline when the site opens.</small></span></label>
+            </section>
+
+            <section class="settings-card danger-settings-card">
+              <div class="settings-card-heading"><div class="settings-icon">⌫</div><div><h3>Local data</h3><p>Manage information stored by AeroRoster.</p></div></div>
+              <div class="data-summary"><div><span>Completed flights</span><strong id="settingsFlightCount">0</strong></div><div><span>Active flight</span><strong id="settingsActiveStatus">None</strong></div></div>
+              <div class="settings-actions"><button id="clearActiveFlightSetting" type="button">Clear active flight</button><button id="clearLogbookSetting" type="button" class="danger-setting-button">Clear logbook</button></div>
+              <p class="settings-note">AeroRoster stores preferences, the active flight and logbook only in your browser.</p>
+            </section>
+          </div>
+        </section>
       </main>
     </section>
   </div>
