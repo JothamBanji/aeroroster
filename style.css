@@ -34,3 +34,9 @@ dialog{width:min(680px,calc(100% - 28px));padding:0;border:1px solid var(--line)
 .schedule-depart-button{width:100%;margin-top:15px}
 #schedulePanel{animation:scheduleReveal .2s ease}
 @keyframes scheduleReveal{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+
+.flight-number-field{grid-column:1/-1}
+.flight-number-field small{font-weight:400;line-height:1.45;color:var(--muted)}
+.confirm-grid{grid-template-columns:repeat(4,1fr)}
+@media(max-width:760px){.confirm-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:430px){.confirm-grid{grid-template-columns:1fr}}

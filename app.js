@@ -5,11 +5,11 @@ const els={airline:$("airline"),aircraft:$("aircraft"),departure:$("departure"),
 
 
 const airlineLogos={
-  "Saudia":"assets/logos/saudia.svg",
-  "Singapore Airlines":"assets/logos/singapore-airlines.svg",
-  "Turkish Airlines":"assets/logos/turkish-airlines.svg",
-  "Air India":"assets/logos/air-india.svg",
-  "Qatar Airways":"assets/logos/qatar-airways.svg"
+  "Saudia":"https://cdn.jsdelivr.net/npm/@thesvg/icons@1.2.0/icons/saudia.svg",
+  "Singapore Airlines":"https://upload.wikimedia.org/wikipedia/commons/9/9d/Singapore_Airlines_Logo.svg",
+  "Turkish Airlines":"https://upload.wikimedia.org/wikipedia/commons/0/00/Turkish_Airlines_logo_2019_compact.svg",
+  "Air India":"https://upload.wikimedia.org/wikipedia/commons/b/bf/Air_India_2023.svg",
+  "Qatar Airways":"https://upload.wikimedia.org/wikipedia/commons/7/75/Qatar_Airways_logo.svg"
 };
 function airlineLogo(name,compact=false){
   const src=airlineLogos[name];
@@ -57,7 +57,7 @@ function render(){
     const c=document.createElement("article");c.className="route-card";
     c.innerHTML=`<div class="card-top">${airlineLogo(x.airline,true)}<span class="code">${escapeHtml(x.aircraftIcao)}</span></div>
     <div class="airports"><div class="airport"><b>${x.fromIata}</b><span>${escapeHtml(x.fromCity)}</span></div><div class="line"><i>✈</i></div><div class="airport right"><b>${x.toIata}</b><span>${escapeHtml(x.toCity)}</span></div></div>
-    <div class="card-bottom"><div><small>Aircraft</small><strong>${escapeHtml(x.aircraft)}</strong></div><button class="primary">View flight</button></div>`;
+    <div class="card-bottom"><div><small>${x.flightNumber?"Flight":"Aircraft"}</small><strong>${escapeHtml(x.flightNumber||x.aircraft)}</strong></div><button class="primary">View flight</button></div>`;
     c.querySelector("button").onclick=()=>openRoute(x);els.grid.append(c);
   });
 }
@@ -123,6 +123,15 @@ function openRoute(x){
             <select id="durationMinutes">${minuteOptions()}</select>
           </div>
         </label>
+
+        <label class="flight-number-field">
+          Flight number
+          <input id="flightNumber" list="flightNumberOptions" value="${escapeHtml(x.flightNumber||"")}" placeholder="${escapeHtml(x.airlineCode)} flight number">
+          <datalist id="flightNumberOptions">
+            ${(x.flightNumberOptions||[]).map(number=>`<option value="${escapeHtml(number)}"></option>`).join("")}
+          </datalist>
+          <small>${x.flightNumberOptions?.length?"Verified/current common option; edit when another service applies.":"No verified default stored for this route—enter the real number for your date."}</small>
+        </label>
       </div>
 
       <p class="note">
@@ -166,16 +175,17 @@ function showDepartureConfirmation(x){
   if(!Number.isFinite(departureMs)){alert("Choose a valid UTC departure date and time.");return}
   if(durationMinutes<=0){alert("Choose a flight duration longer than zero.");return}
   const etaMs=departureMs+durationMinutes*60000;
+  const flightNumber=normalizeFlightNumber($("flightNumber")?.value||x.flightNumber||"");
   const panel=$("confirmPanel");
   panel.innerHTML=`<div class="confirm-head"><div><span class="section-label">CONFIRM DEPARTURE</span><strong>${x.fromIata} → ${x.toIata}</strong></div><button id="closeConfirm" class="text-button">Cancel</button></div>
-  <div class="confirm-grid"><div><span>Departure</span><b>${formatUtc(departureMs)}</b></div><div><span>ETA</span><b>${formatUtc(etaMs)}</b></div><div><span>Aircraft</span><b>${escapeHtml(x.aircraft)}</b></div></div>
+  <div class="confirm-grid"><div><span>Departure</span><b>${formatUtc(departureMs)}</b></div><div><span>ETA</span><b>${formatUtc(etaMs)}</b></div><div><span>Aircraft</span><b>${escapeHtml(x.aircraft)}</b></div><div><span>Flight number</span><b>${escapeHtml(flightNumber||"Not set")}</b></div></div>
   <button id="confirmDeparture" class="primary confirm-button">Confirm departure</button>`;
   panel.classList.remove("hidden");
   $("closeConfirm").onclick=()=>panel.classList.add("hidden");
-  $("confirmDeparture").onclick=()=>startRouteWithValues(x,departureMs,durationMinutes);
+  $("confirmDeparture").onclick=()=>startRouteWithValues(x,departureMs,durationMinutes,flightNumber);
 }
-function startRouteWithValues(x,departureMs,durationMinutes){
-  const active={...x,id:crypto.randomUUID?crypto.randomUUID():String(Date.now()),departureMs,durationMinutes,etaMs:departureMs+durationMinutes*60000,createdAt:Date.now()};
+function startRouteWithValues(x,departureMs,durationMinutes,flightNumber){
+  const active={...x,flightNumber:flightNumber||"",id:crypto.randomUUID?crypto.randomUUID():String(Date.now()),departureMs,durationMinutes,etaMs:departureMs+durationMinutes*60000,createdAt:Date.now()};
   localStorage.setItem("aeroroster-active-flight",JSON.stringify(active));
   els.modal.close();renderActiveFlight();switchView("flight");
 }
@@ -216,7 +226,7 @@ function renderActiveFlight(){
   <div class="live-route"><div class="live-airport"><b>${x.fromIata}</b><span>${escapeHtml(x.fromCity)}</span></div>
   <div class="progress-wrap"><div class="progress-plane" style="left:${progress*100}%">✈</div><div class="progress-track"><div class="progress-fill" style="width:${progress*100}%"></div></div></div>
   <div class="live-airport right"><b>${x.toIata}</b><span>${escapeHtml(x.toCity)}</span></div></div>
-  <div class="flight-metrics"><div><span>STATUS</span><b>${status}</b></div><div><span>DEPARTURE UTC</span><b>${formatUtc(x.departureMs)}</b></div><div><span>ETA UTC</span><b>${formatUtc(x.etaMs)}</b></div><div><span>${countdownLabel.toUpperCase()}</span><b class="countdown">${countdownValue}</b></div></div>
+  <div class="flight-metrics"><div><span>STATUS</span><b>${status}</b></div><div><span>FLIGHT</span><b>${escapeHtml(x.flightNumber||"Not set")}</b></div><div><span>DEPARTURE UTC</span><b>${formatUtc(x.departureMs)}</b></div><div><span>ETA UTC</span><b>${formatUtc(x.etaMs)}</b></div><div><span>${countdownLabel.toUpperCase()}</span><b class="countdown">${countdownValue}</b></div></div>
   <div class="active-actions"><button id="activeSimbrief" class="primary">Open in SimBrief</button><button id="finishActive" class="secondary">${status==="Arrived"?"Save to logbook":"Finish and log now"}</button></div>`;
   $("activeSimbrief").onclick=()=>openSimbrief(x);
   $("finishActive").onclick=()=>finishActiveFlight(x);
@@ -236,16 +246,24 @@ function formatDuration(ms){
   const days=Math.floor(total/86400),hours=Math.floor((total%86400)/3600),minutes=Math.floor((total%3600)/60),seconds=total%60;
   return `${days?days+"d ":""}${String(hours).padStart(2,"0")}:${String(minutes).padStart(2,"0")}:${String(seconds).padStart(2,"0")}`;
 }
+function normalizeFlightNumber(value){
+  return String(value||"").trim().toUpperCase().replace(/\s+/g,"");
+}
+function numericFlightNumber(value,airlineCode){
+  const normalized=normalizeFlightNumber(value);
+  if(!normalized)return "";
+  const prefix=String(airlineCode||"").toUpperCase();
+  return normalized.startsWith(prefix)?normalized.slice(prefix.length).replace(/\D/g,""):normalized.replace(/\D/g,"");
+}
 function openSimbrief(x){
   let departureMs;
   let durationMinutes;
+  let selectedFlightNumber=normalizeFlightNumber(x.flightNumber||"");
 
-  // Active flights already contain their confirmed schedule.
   if(Number.isFinite(Number(x.departureMs))){
     departureMs=Number(x.departureMs);
     durationMinutes=Number(x.durationMinutes)||0;
   }else{
-    // In the route window, use the default schedule or any user modification.
     const departureInput=$("departureUtc");
     departureMs=departureInput?parseUtcInput(departureInput.value):Date.now()+60*60*1000;
 
@@ -253,6 +271,11 @@ function openSimbrief(x){
     const minutesInput=$("durationMinutes");
     durationMinutes=(hoursInput?Number(hoursInput.value):2)*60+
       (minutesInput?Number(minutesInput.value):0);
+
+    const flightNumberInput=$("flightNumber");
+    if(flightNumberInput){
+      selectedFlightNumber=normalizeFlightNumber(flightNumberInput.value);
+    }
   }
 
   if(!Number.isFinite(departureMs)){
@@ -263,6 +286,7 @@ function openSimbrief(x){
   const departure=new Date(departureMs);
   const scheduledHours=Math.floor(durationMinutes/60);
   const scheduledMinutes=durationMinutes%60;
+  const numericNumber=numericFlightNumber(selectedFlightNumber,x.airlineCode);
 
   const p=new URLSearchParams({
     orig:x.fromIcao,
@@ -273,7 +297,9 @@ function openSimbrief(x){
     deph:String(departure.getUTCHours()).padStart(2,"0"),
     depm:String(departure.getUTCMinutes()).padStart(2,"0"),
     steh:String(scheduledHours),
-    stem:String(scheduledMinutes).padStart(2,"0")
+    stem:String(scheduledMinutes).padStart(2,"0"),
+    fltnum:numericNumber,
+    callsign:numericNumber?`${x.airlineIcao}${numericNumber}`:""
   });
 
   window.open(
