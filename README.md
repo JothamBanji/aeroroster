@@ -31,3 +31,12 @@ Upload the contents of this folder to the repository root, then enable **Setting
 ## Data note
 
 Aircraft assignments and flight numbers can vary by date and operating schedule. The flight-number field remains editable so exact services can be entered before sending the route to SimBrief.
+
+
+## Visibility and flight-number update
+
+- Dropdown menus now force dark backgrounds and light text even when the computer is using light mode.
+- Airline logos are displayed on white high-contrast tiles.
+- The AeroRoster brand uses a custom vector aircraft mark instead of an emoji.
+- The “Add number” message and editable flight-number input have been removed.
+- Only stored/verified flight numbers are displayed; routes without one show “Not available” rather than a fabricated number.

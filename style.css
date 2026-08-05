@@ -3,3 +3,21 @@
 @media(max-width:1180px){.finder-layout,.bottom-grid{grid-template-columns:1fr}.details-card{display:block}.popular-routes{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:850px){.app-shell{grid-template-columns:1fr}.sidebar{position:fixed;left:-260px;z-index:20;width:248px;transition:.25s}.sidebar.open{left:0}.menu-button{display:block}.topbar{padding:0 16px}main{padding:0 14px 28px}.select-row{position:static;margin-top:75px;grid-template-columns:1fr}.finder-hero{padding-bottom:20px}.aircraft-art{display:none}.search-box{min-width:0}.popular-routes{grid-template-columns:repeat(2,1fr)}.schedule-fields,.confirm-grid,.active-metrics{grid-template-columns:1fr 1fr}}
 @media(max-width:560px){.hero-copy h2{font-size:27px}.section-heading{align-items:stretch;flex-direction:column}.popular-routes,.metric-row,.schedule-fields,.confirm-grid,.active-metrics{grid-template-columns:1fr}.about-card{align-items:flex-start;flex-direction:column}.secondary-actions,.dialog-actions{grid-template-columns:1fr;display:grid}.dialog-info{grid-template-columns:1fr}.live-route{grid-template-columns:1fr}.live-airport.right{text-align:left}.log-row{grid-template-columns:1fr auto}.log-row>div:nth-child(2),.log-row>div:nth-child(3){display:none}}
+
+/* Force readable controls even when the operating system/browser is in light mode. */
+select,input,textarea{color-scheme:dark!important;background-color:#081525!important;color:#f7f9fc!important;-webkit-text-fill-color:#f7f9fc!important}
+select option,select optgroup{background:#081525!important;color:#f7f9fc!important;-webkit-text-fill-color:#f7f9fc!important}
+select:disabled,input:disabled{opacity:.72;color:#c7d1df!important;-webkit-text-fill-color:#c7d1df!important}
+
+/* Crisp custom application logo. */
+.brand-icon{display:grid;place-items:center;width:43px;height:43px;border-radius:13px;background:linear-gradient(145deg,#16e579,#078f49);color:#02120a;box-shadow:0 8px 24px rgba(22,229,121,.22);transform:none!important;font-size:0!important}
+.brand-icon svg{width:29px;height:29px;transform:rotate(-8deg)}
+
+/* Airline logos always sit on a high-contrast tile. */
+.airline-link img,.details-title img,.about-card img,.dialog-header img{object-fit:contain;background:#fff!important;border:1px solid rgba(255,255,255,.28);border-radius:9px;padding:5px;filter:none!important}
+.airline-link img{width:42px!important;height:30px!important;flex:0 0 42px}
+.details-title img{width:142px!important;height:56px!important;padding:8px}
+.about-card img{width:180px!important;height:72px!important;padding:10px}
+.dialog-header img{width:165px!important;height:64px!important;padding:9px}
+.flight-number-readonly{grid-column:1/-1;padding:13px 14px;border:1px solid var(--line);border-radius:10px;background:#081525}
+.flight-number-readonly span,.flight-number-readonly strong{display:block}.flight-number-readonly span{font-size:11px;color:var(--muted);margin-bottom:6px}.flight-number-readonly strong{color:var(--green);font-size:15px}
