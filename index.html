@@ -126,7 +126,7 @@
             <div><span>PREFERENCES</span><h2>Settings</h2><p>Personalize the planner. Settings are saved in this browser.</p></div>
             <div class="settings-heading-actions">
               <button id="resetSettings" class="outline-settings-button" type="button">Reset defaults</button>
-              <button id="saveSettingsButton" class="save-settings-button" type="button">Save settings</button>
+              <button id="saveSettingsButton" class="save-settings-button" type="button">Confirm changes</button>
             </div>
           </div>
 
@@ -167,6 +167,13 @@
               <div class="settings-actions"><button id="clearActiveFlightSetting" type="button">Clear active flight</button><button id="clearLogbookSetting" type="button" class="danger-setting-button">Clear logbook</button></div>
               <p class="settings-note">AeroRoster stores preferences, the active flight and logbook only in your browser.</p>
             </section>
+          </div>
+          <div class="settings-confirm-bar">
+            <div>
+              <strong>Ready to apply your preferences?</strong>
+              <span>The theme, accent colour, time display and SimBrief settings are applied only after confirmation.</span>
+            </div>
+            <button id="confirmSettingsBottom" class="save-settings-button" type="button">Confirm changes</button>
           </div>
           <div id="settingsSaveStatus" class="settings-save-status" aria-live="polite"></div>
         </section>

@@ -267,7 +267,9 @@ function renderActive(){
   const countdown=now<f.departureMs?formatCountdown(f.departureMs-now):now<f.etaMs?formatCountdown(f.etaMs-now):'Complete';
   if(state.renderedActiveId!==f.id){
     destroyActiveMap();state.renderedActiveId=f.id;
-    c.innerHTML=`<div class="active-flight-card map-active-card"><div class="active-head"><div><small>${escapeHtml(f.airline)} · ${escapeHtml(f.aircraft)}</small><h2>${f.fromIata} → ${f.toIata}</h2></div><span id="activeStatusChip" class="status-chip">${status}</span></div><div class="active-map-layout"><section class="map-panel"><div id="activeFlightMap" class="active-flight-map"></div><div class="map-source-chip" id="mapSourceChip"></div></section><aside class="flight-sidebar-panel"><div class="active-metrics vertical-metrics"><div><span>Flight</span><strong>${escapeHtml(f.flightNumber||'Not available')}</strong></div><div><span>Status</span><strong id="activeStatusText">${status}</strong></div><div><span>Departure</span><strong>${formatUtc(f.departureMs)}</strong></div><div><span>ETA</span><strong>${formatUtc(f.etaMs)}</strong></div><div><span>Countdown</span><strong id="activeCountdown">${countdown}</strong></div><div><span>Progress</span><strong id="activeProgressText">${Math.round(progress*100)}%</strong></div><div><span>Next waypoint</span><strong id="activeNextWaypoint">—</strong></div></div></aside></div><div class="flight-progress-footer"><div class="progress"><div id="activeProgressFill" class="progress-fill" style="width:${progress*100}%"></div><div id="activeProgressPlane" class="progress-plane" style="left:${progress*100}%">✈</div></div></div><div class="dialog-actions"><button id="activeSimbrief" class="outline-button">Open SimBrief</button><button id="refreshSimbriefActive" class="outline-button">Import latest OFP</button><button id="finishFlight" class="schedule-button">Finish & Log</button></div></div>`;
+    c.innerHTML=`<div class="active-flight-card map-active-card"><div class="active-head"><div><small>${escapeHtml(f.airline)} · ${escapeHtml(f.aircraft)}</small><h2>${f.fromIata} → ${f.toIata}</h2></div><span id="activeStatusChip" class="status-chip">${status}</span></div><div class="active-map-layout"><section class="map-panel"><div id="activeFlightMap" class="active-flight-map"></div><div class="map-source-chip" id="mapSourceChip"></div></section><aside class="flight-sidebar-panel"><div class="active-metrics vertical-metrics"><div><span>Flight</span><strong>${escapeHtml(f.flightNumber||'Not available')}</strong></div><div><span>Status</span><strong id="activeStatusText">${status}</strong></div><div><span>Departure</span><strong>${formatUtc(f.departureMs)}</strong></div><div><span>ETA</span><strong>${formatUtc(f.etaMs)}</strong></div><div><span>Countdown</span><strong id="activeCountdown">${countdown}</strong></div><div><span>Progress</span><strong id="activeProgressText">${Math.round(progress*100)}%</strong></div><div><span>Next waypoint</span><strong id="activeNextWaypoint">—</strong></div>
+    <div><span>Top of climb</span><strong id="activeTocStatus">—</strong></div>
+    <div><span>Top of descent</span><strong id="activeTodStatus">—</strong></div></div></aside></div><div class="flight-progress-footer"><div class="progress"><div id="activeProgressFill" class="progress-fill" style="width:${progress*100}%"></div><div id="activeProgressPlane" class="progress-plane" style="left:${progress*100}%">✈</div></div></div><div class="dialog-actions"><button id="activeSimbrief" class="outline-button">Open SimBrief</button><button id="refreshSimbriefActive" class="outline-button">Import latest OFP</button><button id="finishFlight" class="schedule-button">Finish & Log</button></div></div>`;
     $('activeSimbrief').onclick=()=>openSimbrief(f);$('finishFlight').onclick=()=>finishFlight(f);
     $('refreshSimbriefActive').onclick=async()=>{const imported=await importLatestSimbrief(true);if(imported){const current=getActive();if(normalizeCode(imported.origin)===normalizeCode(current.fromIcao)&&normalizeCode(imported.destination)===normalizeCode(current.toIcao)){current.simbriefRoute=imported;localStorage.setItem('aeroroster-active-flight',JSON.stringify(current));destroyActiveMap();state.renderedActiveId=null;renderActive();}else alert('The imported SimBrief OFP does not match this active flight.');}};
     setupActiveMap(f);
@@ -275,13 +277,77 @@ function renderActive(){
   if($('activeStatusChip'))$('activeStatusChip').textContent=status;if($('activeStatusText'))$('activeStatusText').textContent=status;if($('activeCountdown'))$('activeCountdown').textContent=countdown;if($('activeProgressText'))$('activeProgressText').textContent=`${Math.round(progress*100)}%`;if($('activeProgressFill'))$('activeProgressFill').style.width=`${progress*100}%`;if($('activeProgressPlane'))$('activeProgressPlane').style.left=`${progress*100}%`;
   updateActiveMap(f,progress);
 }
-function getFlightStatus(f,now,p){if(now<f.departureMs)return'Waiting at gate';if(now>=f.etaMs)return'Arrived';if(p<.04)return'Taxi and takeoff';if(p<.16)return'Climb';if(p<.8)return'Cruise';if(p<.96)return'Descent';return'Approach and landing'}
+function getFlightStatus(f,now,p){
+  if(now<f.departureMs)return'Waiting at gate';
+  if(now>=f.etaMs)return'Arrived';
+
+  const points=getFlightMapPoints(f);
+  const currentIndex=Math.min(
+    Math.max(0,points.length-1),
+    Math.floor(Math.max(0,Math.min(1,p))*(Math.max(1,points.length-1)))
+  );
+
+  const simbrief=f.simbriefRoute;
+  const tocIndex=Number.isInteger(simbrief?.tocIndex)?simbrief.tocIndex:-1;
+  const todIndex=Number.isInteger(simbrief?.todIndex)?simbrief.todIndex:-1;
+
+  // When SimBrief includes TOC/TOD, use those planned points.
+  if(points.length>2&&(tocIndex>=0||todIndex>=0)){
+    if(p<.025)return'Taxi and takeoff';
+    if(tocIndex>=0&&currentIndex<tocIndex)return'Climb';
+    if(todIndex>=0&&currentIndex>=todIndex){
+      if(p>.965)return'Approach and landing';
+      return'Descent';
+    }
+    if(tocIndex>=0&&currentIndex>=tocIndex&&(todIndex<0||currentIndex<todIndex))return'Cruise';
+  }
+
+  // Fallback only when the OFP has no usable TOC/TOD markers.
+  if(p<.04)return'Taxi and takeoff';
+  if(p<.16)return'Climb';
+  if(p<.80)return'Cruise';
+  if(p<.96)return'Descent';
+  return'Approach and landing';
+}
 function destroyActiveMap(){if(state.activeMap)state.activeMap.remove();state.activeMap=null;state.activeMarker=null;state.activeRouteLine=null}
 function setupActiveMap(f){if(typeof L==='undefined')return;const el=$('activeFlightMap');if(!el)return;const pts=getFlightMapPoints(f);if(pts.length<2){el.innerHTML='<div class="map-error">Airport coordinates are unavailable.</div>';return}state.activeMap=L.map(el);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'© OpenStreetMap contributors'}).addTo(state.activeMap);const ll=pts.map(p=>[p.lat,p.lon]);state.activeRouteLine=L.polyline(ll,{color:getComputedStyle(document.body).getPropertyValue('--accent').trim()||'#16db73',weight:4,opacity:.92}).addTo(state.activeMap);L.marker(ll[0]).addTo(state.activeMap).bindPopup(`<b>${escapeHtml(f.fromIata)}</b>`);L.marker(ll[ll.length-1]).addTo(state.activeMap).bindPopup(`<b>${escapeHtml(f.toIata)}</b>`);state.activeMarker=L.marker(ll[0],{icon:L.divIcon({className:'aircraft-map-marker',html:'✈',iconSize:[34,34],iconAnchor:[17,17]})}).addTo(state.activeMap);state.activeMap.fitBounds(state.activeRouteLine.getBounds(),{padding:[35,35]});$('mapSourceChip').textContent=f.simbriefRoute?.waypoints?.length?`SimBrief route · ${f.simbriefRoute.waypoints.length} waypoints`:'Estimated great-circle route';setTimeout(()=>state.activeMap?.invalidateSize(),100)}
 function getFlightMapPoints(f){if(f.simbriefRoute?.waypoints?.length>=2)return f.simbriefRoute.waypoints.filter(validMapPoint);const a=state.airports[f.fromIata],b=state.airports[f.toIata];if(!a||!b)return[];return createGreatCirclePoints({lat:+a.lat,lon:+a.lon,ident:f.fromIata},{lat:+b.lat,lon:+b.lon,ident:f.toIata},80)}
 function validMapPoint(p){return Number.isFinite(+p.lat)&&Number.isFinite(+p.lon)}
 function createGreatCirclePoints(s,e,n){const out=[],a1=toRad(s.lat),o1=toRad(s.lon),a2=toRad(e.lat),o2=toRad(e.lon),d=2*Math.asin(Math.sqrt(Math.sin((a2-a1)/2)**2+Math.cos(a1)*Math.cos(a2)*Math.sin((o2-o1)/2)**2));if(!Number.isFinite(d)||d===0)return[s,e];for(let i=0;i<=n;i++){const f=i/n,A=Math.sin((1-f)*d)/Math.sin(d),B=Math.sin(f*d)/Math.sin(d),x=A*Math.cos(a1)*Math.cos(o1)+B*Math.cos(a2)*Math.cos(o2),y=A*Math.cos(a1)*Math.sin(o1)+B*Math.cos(a2)*Math.sin(o2),z=A*Math.sin(a1)+B*Math.sin(a2);out.push({lat:toDeg(Math.atan2(z,Math.sqrt(x*x+y*y))),lon:toDeg(Math.atan2(y,x)),ident:i===0?s.ident:i===n?e.ident:''})}return out}
-function updateActiveMap(f,p){if(!state.activeMarker)return;const pts=getFlightMapPoints(f);if(pts.length<2)return;const pos=interpolatePolyline(pts,p);state.activeMarker.setLatLng([pos.lat,pos.lon]);const next=pts[Math.min(pts.length-1,Math.ceil(p*(pts.length-1)))];if($('activeNextWaypoint'))$('activeNextWaypoint').textContent=next?.ident||f.toIata}
+function updateActiveMap(f,p){
+  if(!state.activeMarker)return;
+  const pts=getFlightMapPoints(f);
+  if(pts.length<2)return;
+
+  const position=interpolatePolyline(pts,p);
+  state.activeMarker.setLatLng([position.lat,position.lon]);
+
+  const currentIndex=Math.min(
+    pts.length-1,
+    Math.floor(Math.max(0,Math.min(1,p))*(pts.length-1))
+  );
+  const next=pts[Math.min(pts.length-1,currentIndex+1)];
+  if($('activeNextWaypoint'))$('activeNextWaypoint').textContent=next?.ident||f.toIata;
+
+  const tocIndex=Number.isInteger(f.simbriefRoute?.tocIndex)?f.simbriefRoute.tocIndex:-1;
+  const todIndex=Number.isInteger(f.simbriefRoute?.todIndex)?f.simbriefRoute.todIndex:-1;
+
+  if($('activeTocStatus')){
+    $('activeTocStatus').textContent=tocIndex<0
+      ? 'Not in OFP'
+      : currentIndex>=tocIndex
+        ? 'Passed'
+        : `${Math.max(0,tocIndex-currentIndex)} waypoint${tocIndex-currentIndex===1?'':'s'} ahead`;
+  }
+
+  if($('activeTodStatus')){
+    $('activeTodStatus').textContent=todIndex<0
+      ? 'Not in OFP'
+      : currentIndex>=todIndex
+        ? 'Passed · descending'
+        : `${Math.max(0,todIndex-currentIndex)} waypoint${todIndex-currentIndex===1?'':'s'} ahead`;
+  }
+}
 function interpolatePolyline(pts,p){const s=Math.max(0,Math.min(1,p))*(pts.length-1),i=Math.min(pts.length-2,Math.floor(s)),f=s-i,a=pts[i],b=pts[i+1];return{lat:+a.lat+(+b.lat-+a.lat)*f,lon:+a.lon+(+b.lon-+a.lon)*f}}
 function toRad(v){return +v*Math.PI/180}function toDeg(v){return v*180/Math.PI}
 function finishFlight(f){const log=getLog();log.unshift({...f,completedAt:new Date().toISOString()});localStorage.setItem('aeroroster-logbook',JSON.stringify(log));localStorage.removeItem('aeroroster-active-flight');renderActive();renderLogbook();renderDashboard();switchView('logbook');}
@@ -333,14 +399,104 @@ function getActive(){try{return JSON.parse(localStorage.getItem('aeroroster-acti
 function escapeHtml(v){return String(v??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#039;')}
 
 function getSettings(){const d={theme:'dark',accent:'green',compact:false,timeZone:'utc',departureOffset:60,showSeconds:true,routeMode:'airline',autoSimbrief:false,rememberAirline:true,lastAirline:'Saudia',simbriefUserId:'',simbriefProxy:'',useSimbriefMap:true};try{return{...d,...JSON.parse(localStorage.getItem('aeroroster-settings')||'{}')}}catch{return d}}
-function saveSettings(next,show=true){localStorage.setItem('aeroroster-settings',JSON.stringify({...getSettings(),...next}));applyStoredSettings();renderSettingsSummary();if(show&&$('settingsSaveStatus')){$('settingsSaveStatus').textContent='✓ Settings saved successfully.';$('settingsSaveStatus').classList.add('visible');setTimeout(()=>$('settingsSaveStatus')?.classList.remove('visible'),2800)}}
+function saveSettings(next,show=true){localStorage.setItem('aeroroster-settings',JSON.stringify({...getSettings(),...next}));applyStoredSettings();renderSettingsSummary();if(show&&$('settingsSaveStatus')){$('settingsSaveStatus').textContent='✓ Changes confirmed and applied successfully.';$('settingsSaveStatus').classList.add('visible');setTimeout(()=>$('settingsSaveStatus')?.classList.remove('visible'),2800)}}
 function readSettingsForm(){return{theme:$('settingTheme').value,accent:$('settingAccent').value,compact:$('settingCompact').checked,timeZone:$('settingTimeZone').value,departureOffset:+$('settingDepartureOffset').value,showSeconds:$('settingSeconds').checked,routeMode:$('settingRouteMode').value,autoSimbrief:$('settingAutoSimbrief').checked,rememberAirline:$('settingRememberAirline').checked,simbriefUserId:$('settingSimbriefUserId').value.trim(),simbriefProxy:$('settingSimbriefProxy').value.trim(),useSimbriefMap:$('settingUseSimbriefMap').checked}}
 function applyStoredSettings(){const s=getSettings();document.body.classList.remove('theme-midnight','theme-light','accent-blue','accent-purple','accent-orange','compact-layout');if(s.theme==='midnight')document.body.classList.add('theme-midnight');if(s.theme==='light')document.body.classList.add('theme-light');if(s.accent!=='green')document.body.classList.add(`accent-${s.accent}`);if(s.compact)document.body.classList.add('compact-layout');const u=document.querySelector('.utc-chip');if(u)u.textContent=s.timeZone==='local'?'◷ LOCAL':'◷ UTC'}
-function bindSettings(){$('saveSettingsButton').onclick=()=>{const n=readSettingsForm();saveSettings(n,true);if(n.routeMode!==state.mode)setMode(n.routeMode)};$('resetSettings').onclick=()=>{if(confirm('Reset all AeroRoster preferences?')){localStorage.removeItem('aeroroster-settings');applyStoredSettings();renderSettingsSummary()}};$('importSimbriefButton').onclick=()=>importLatestSimbrief(false);$('clearSimbriefButton').onclick=()=>{localStorage.removeItem('aeroroster-simbrief-ofp');renderSettingsSummary();setSimbriefStatus('Imported SimBrief plan cleared.','success')};$('clearActiveFlightSetting').onclick=()=>{if(confirm('Clear the active flight?')){localStorage.removeItem('aeroroster-active-flight');destroyActiveMap();state.renderedActiveId=null;renderActive();renderDashboard();renderSettingsSummary()}};$('clearLogbookSetting').onclick=()=>{if(confirm('Clear every flight in the logbook?')){localStorage.removeItem('aeroroster-logbook');renderLogbook();renderDashboard();renderSettingsSummary()}}}
+function bindSettings(){const confirmSettings=()=>{
+  const next=readSettingsForm();
+  saveSettings(next,true);
+  if(next.routeMode!==state.mode)setMode(next.routeMode);
+};
+$('saveSettingsButton').onclick=confirmSettings;
+$('confirmSettingsBottom').onclick=confirmSettings;$('resetSettings').onclick=()=>{if(confirm('Reset all AeroRoster preferences?')){localStorage.removeItem('aeroroster-settings');applyStoredSettings();renderSettingsSummary()}};$('importSimbriefButton').onclick=()=>importLatestSimbrief(false);$('clearSimbriefButton').onclick=()=>{localStorage.removeItem('aeroroster-simbrief-ofp');renderSettingsSummary();setSimbriefStatus('Imported SimBrief plan cleared.','success')};$('clearActiveFlightSetting').onclick=()=>{if(confirm('Clear the active flight?')){localStorage.removeItem('aeroroster-active-flight');destroyActiveMap();state.renderedActiveId=null;renderActive();renderDashboard();renderSettingsSummary()}};$('clearLogbookSetting').onclick=()=>{if(confirm('Clear every flight in the logbook?')){localStorage.removeItem('aeroroster-logbook');renderLogbook();renderDashboard();renderSettingsSummary()}}}
 function renderSettingsSummary(){const s=getSettings(),v={settingTheme:s.theme,settingAccent:s.accent,settingTimeZone:s.timeZone,settingDepartureOffset:String(s.departureOffset),settingRouteMode:s.routeMode,settingSimbriefUserId:s.simbriefUserId,settingSimbriefProxy:s.simbriefProxy};Object.entries(v).forEach(([id,val])=>{if($(id))$(id).value=val});if($('settingCompact'))$('settingCompact').checked=!!s.compact;if($('settingSeconds'))$('settingSeconds').checked=!!s.showSeconds;if($('settingAutoSimbrief'))$('settingAutoSimbrief').checked=!!s.autoSimbrief;if($('settingRememberAirline'))$('settingRememberAirline').checked=!!s.rememberAirline;if($('settingUseSimbriefMap'))$('settingUseSimbriefMap').checked=!!s.useSimbriefMap;if($('settingsFlightCount'))$('settingsFlightCount').textContent=getLog().length;if($('settingsActiveStatus'))$('settingsActiveStatus').textContent=getActive()?'Scheduled':'None';const ofp=getImportedSimbrief();setSimbriefStatus(ofp?`${ofp.flightNumber||'Flight'} · ${ofp.origin} → ${ofp.destination} · ${ofp.waypoints.length} map points`:'No SimBrief plan has been imported.',ofp?'success':'')}
 async function importLatestSimbrief(silent=false){const d=readSettingsForm();if(!d.simbriefUserId){setSimbriefStatus('Enter your SimBrief Pilot ID first.','error');if(!silent)switchView('settings');return null}setSimbriefStatus('Importing the latest SimBrief OFP…','loading');try{const direct=`https://www.simbrief.com/api/xml.fetcher.php?userid=${encodeURIComponent(d.simbriefUserId)}&json=1`,url=d.simbriefProxy?buildProxyUrl(d.simbriefProxy,direct):direct,res=await fetch(url,{headers:{Accept:'application/json'}});if(!res.ok)throw new Error(`SimBrief returned HTTP ${res.status}.`);const parsed=parseSimbriefOfp(await res.json());if(!parsed.origin||!parsed.destination)throw new Error('OFP did not contain origin and destination.');localStorage.setItem('aeroroster-simbrief-ofp',JSON.stringify(parsed));saveSettings(d,false);renderSettingsSummary();setSimbriefStatus(`Imported ${parsed.flightNumber||'flight'} ${parsed.origin} → ${parsed.destination} with ${parsed.waypoints.length} map points.`,'success');return parsed}catch(e){console.error(e);setSimbriefStatus(`Import failed: ${e.message} Direct browser requests may be blocked by CORS; add a compatible proxy URL if necessary.`,'error');return null}}
 function buildProxyUrl(p,u){return p.includes('{url}')?p.replace('{url}',encodeURIComponent(u)):`${p}${p.includes('?')?'&':'?'}url=${encodeURIComponent(u)}`}
-function parseSimbriefOfp(raw){const g=raw.general||{},o=raw.origin||{},d=raw.destination||{},a=raw.aircraft||{},t=raw.times||{},fix=Array.isArray(raw.navlog?.fix)?raw.navlog.fix:Array.isArray(raw.navlog)?raw.navlog:[],wp=fix.map(x=>({ident:String(x.ident||x.name||x.fix||'').trim(),lat:+(x.pos_lat??x.latitude??x.lat),lon:+(x.pos_long??x.longitude??x.lon)})).filter(validMapPoint),orig=String(o.icao_code||o.icao||g.orig_icao||'').toUpperCase(),dest=String(d.icao_code||d.icao||g.dest_icao||'').toUpperCase(),oa=findAirportByIcao(orig),da=findAirportByIcao(dest);if(wp.length===0&&oa&&da)wp.push({ident:orig,lat:oa.lat,lon:oa.lon},{ident:dest,lat:da.lat,lon:da.lon});else{if(oa&&!wp.some(x=>x.ident===orig))wp.unshift({ident:orig,lat:oa.lat,lon:oa.lon});if(da&&!wp.some(x=>x.ident===dest))wp.push({ident:dest,lat:da.lat,lon:da.lon})}return{importedAt:new Date().toISOString(),origin:orig,destination:dest,flightNumber:String(g.flight_number||g.flight_num||'').toUpperCase(),airline:String(g.icao_airline||g.airline||'').toUpperCase(),aircraft:String(a.icaocode||a.icao_code||g.aircraft||'').toUpperCase(),route:String(g.route||raw.atc?.route||''),cruiseAltitude:+(g.initial_altitude||g.cruise_altitude||0),distanceNm:+(g.route_distance||g.air_distance||0),scheduledDeparture:+(t.sched_out||t.est_out||0)*1000||null,scheduledArrival:+(t.sched_in||t.est_in||0)*1000||null,waypoints:wp}}
+function parseSimbriefOfp(raw){
+  const general=raw.general||{};
+  const origin=raw.origin||{};
+  const destination=raw.destination||{};
+  const aircraft=raw.aircraft||{};
+  const times=raw.times||{};
+
+  const fixes=Array.isArray(raw.navlog?.fix)
+    ? raw.navlog.fix
+    : Array.isArray(raw.navlog)
+      ? raw.navlog
+      : [];
+
+  const waypoints=fixes.map(fix=>({
+    ident:String(fix.ident||fix.name||fix.fix||'').trim().toUpperCase(),
+    lat:Number(fix.pos_lat??fix.latitude??fix.lat),
+    lon:Number(fix.pos_long??fix.longitude??fix.lon),
+    altitude:Number(fix.altitude_feet??fix.altitude??fix.altitude_ft??0),
+    type:String(fix.type||fix.stage||fix.via_airway||'').trim().toUpperCase()
+  })).filter(validMapPoint);
+
+  const originCode=String(origin.icao_code||origin.icao||general.orig_icao||'').toUpperCase();
+  const destinationCode=String(destination.icao_code||destination.icao||general.dest_icao||'').toUpperCase();
+  const originAirport=findAirportByIcao(originCode);
+  const destinationAirport=findAirportByIcao(destinationCode);
+
+  if(waypoints.length===0&&originAirport&&destinationAirport){
+    waypoints.push(
+      {ident:originCode,lat:originAirport.lat,lon:originAirport.lon,altitude:0,type:'AIRPORT'},
+      {ident:destinationCode,lat:destinationAirport.lat,lon:destinationAirport.lon,altitude:0,type:'AIRPORT'}
+    );
+  }else{
+    if(originAirport&&!waypoints.some(point=>point.ident===originCode)){
+      waypoints.unshift({ident:originCode,lat:originAirport.lat,lon:originAirport.lon,altitude:0,type:'AIRPORT'});
+    }
+    if(destinationAirport&&!waypoints.some(point=>point.ident===destinationCode)){
+      waypoints.push({ident:destinationCode,lat:destinationAirport.lat,lon:destinationAirport.lon,altitude:0,type:'AIRPORT'});
+    }
+  }
+
+  const isToc=point=>{
+    const value=`${point.ident} ${point.type}`.toUpperCase();
+    return value.includes('TOC')||value.includes('TOP OF CLIMB');
+  };
+  const isTod=point=>{
+    const value=`${point.ident} ${point.type}`.toUpperCase();
+    return value.includes('TOD')||value.includes('TOP OF DESCENT');
+  };
+
+  let tocIndex=waypoints.findIndex(isToc);
+  let todIndex=waypoints.findIndex(isTod);
+
+  // Some OFPs omit literal TOC/TOD labels. Use planned altitude profile as a fallback.
+  const cruiseAltitude=Number(general.initial_altitude||general.cruise_altitude||0);
+  if(tocIndex<0&&cruiseAltitude>0){
+    tocIndex=waypoints.findIndex(point=>point.altitude>=cruiseAltitude-1000);
+  }
+  if(todIndex<0&&cruiseAltitude>0){
+    for(let index=Math.max(0,tocIndex+1);index<waypoints.length;index++){
+      const current=waypoints[index];
+      const previous=waypoints[Math.max(0,index-1)];
+      if(previous.altitude>=cruiseAltitude-1000&&current.altitude<cruiseAltitude-1500){
+        todIndex=index;
+        break;
+      }
+    }
+  }
+
+  return{
+    importedAt:new Date().toISOString(),
+    origin:originCode,
+    destination:destinationCode,
+    flightNumber:String(general.flight_number||general.flight_num||'').toUpperCase(),
+    airline:String(general.icao_airline||general.airline||'').toUpperCase(),
+    aircraft:String(aircraft.icaocode||aircraft.icao_code||general.aircraft||'').toUpperCase(),
+    route:String(general.route||raw.atc?.route||''),
+    cruiseAltitude,
+    distanceNm:Number(general.route_distance||general.air_distance||0),
+    scheduledDeparture:Number(times.sched_out||times.est_out||0)*1000||null,
+    scheduledArrival:Number(times.sched_in||times.est_in||0)*1000||null,
+    tocIndex,
+    todIndex,
+    waypoints
+  };
+}
 function findAirportByIcao(i){return Object.values(state.airports).find(a=>normalizeCode(a.icao)===normalizeCode(i))}function normalizeCode(v){return String(v||'').trim().toUpperCase()}function getImportedSimbrief(){try{return JSON.parse(localStorage.getItem('aeroroster-simbrief-ofp')||'null')}catch{return null}}function setSimbriefStatus(m,t){const e=$('simbriefImportStatus');if(e){e.textContent=m;e.className=`simbrief-status ${t||''}`.trim()}}
 
 init().catch(error=>{console.error(error);document.body.innerHTML='<p style="padding:30px">The route data could not be loaded. Run the site through GitHub Pages or a local server.</p>'});

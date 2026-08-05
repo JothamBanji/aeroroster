@@ -62,3 +62,12 @@ Aircraft assignments and flight numbers can vary by date and operating schedule.
 - SimBrief Pilot ID and latest OFP import.
 - Active Flight OpenStreetMap route with SimBrief waypoints when available.
 - Great-circle fallback when no matching OFP is imported.
+
+
+## SimBrief-only phase logic and Settings confirmation
+
+- No Microsoft Flight Simulator connection is required.
+- Active-flight position remains time-estimated along the imported SimBrief waypoint route.
+- When the OFP contains TOC/TOD markers or an altitude profile, AeroRoster uses them to show Climb, Cruise and Descent.
+- Settings now include clearly visible **Confirm changes** buttons at the top and bottom.
+- Theme, accent colour and other preferences are not applied until Confirm changes is pressed.

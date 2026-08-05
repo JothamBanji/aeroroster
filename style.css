@@ -262,3 +262,48 @@ body.compact-layout .details-card,body.compact-layout .popular-card,body.compact
 @media(max-width:620px){.select-row{grid-template-columns:1fr!important}.select-row .select-card:last-child{grid-column:auto}.settings-field{grid-template-columns:1fr;gap:8px}.settings-actions,.data-summary{grid-template-columns:1fr}}
 
 .settings-heading-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:10px}.save-settings-button{min-height:42px;padding:0 18px;border:1px solid var(--accent);border-radius:9px;color:#03130b;background:var(--accent);font-weight:800}.settings-save-status{min-height:22px;margin-top:16px;color:var(--accent);font-weight:700;opacity:0;transition:.2s}.settings-save-status.visible{opacity:1}.settings-field input{width:100%;min-height:44px;margin-top:8px;padding:0 12px;border:1px solid var(--line);border-radius:9px;color:var(--text);background:#071525}.theme-light .settings-field input{color:#0a1725;background:#fff}.simbrief-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}.simbrief-actions button{min-height:42px;padding:0 14px;border:1px solid var(--line);border-radius:9px;color:var(--text);background:var(--panel-soft);font-weight:700}.simbrief-actions button:first-child{color:#03130b;border-color:var(--accent);background:var(--accent)}.simbrief-status{margin-top:14px;padding:12px 13px;border:1px solid var(--line);border-radius:9px;color:var(--muted);background:rgba(255,255,255,.025);font-size:13px;line-height:1.55}.simbrief-status.success{color:var(--accent)}.simbrief-status.error{color:#ff8e9c}.simbrief-status.loading{color:#ffd37c}.map-active-card{padding:0!important;overflow:hidden}.active-map-layout{display:grid;grid-template-columns:minmax(0,2.3fr) minmax(250px,.8fr);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}.map-panel{position:relative;min-width:0;min-height:520px;background:#07111d}.active-flight-map{width:100%;height:520px;z-index:1}.map-source-chip{position:absolute;z-index:500;left:14px;bottom:14px;padding:8px 10px;border:1px solid rgba(255,255,255,.18);border-radius:999px;color:#fff;background:rgba(2,12,22,.84);font-size:12px}.flight-sidebar-panel{padding:20px;border-left:1px solid var(--line);background:var(--panel)}.vertical-metrics{display:grid!important;grid-template-columns:1fr!important;gap:0!important}.vertical-metrics>div{padding:14px 0!important;border:0!important;border-bottom:1px solid var(--line)!important;border-radius:0!important}.flight-progress-footer{padding:22px 22px 10px}.aircraft-map-marker{display:grid!important;width:34px!important;height:34px!important;place-items:center;border:2px solid #fff;border-radius:50%;color:#07111d;background:var(--accent);box-shadow:0 8px 22px rgba(0,0,0,.38);font-size:19px}.leaflet-popup-content-wrapper,.leaflet-popup-tip{color:#fff;background:#0c1b2d}.map-error{display:grid;height:100%;place-items:center;padding:30px;color:var(--muted);text-align:center}@media(max-width:900px){.active-map-layout{grid-template-columns:1fr}.flight-sidebar-panel{border-top:1px solid var(--line);border-left:0}.vertical-metrics{grid-template-columns:repeat(2,minmax(0,1fr))!important}.map-panel,.active-flight-map{min-height:420px;height:420px}}@media(max-width:560px){.settings-heading-actions{width:100%;justify-content:stretch}.settings-heading-actions button{flex:1}.vertical-metrics{grid-template-columns:1fr!important}.map-panel,.active-flight-map{min-height:340px;height:340px}}
+
+
+/* Explicit Settings confirmation controls */
+.settings-confirm-bar{
+  position:sticky;
+  z-index:20;
+  bottom:14px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:18px;
+  margin-top:22px;
+  padding:16px 18px;
+  border:1px solid color-mix(in srgb,var(--accent) 40%,var(--line));
+  border-radius:12px;
+  background:color-mix(in srgb,var(--panel) 94%,transparent);
+  box-shadow:0 16px 38px rgba(0,0,0,.35);
+  backdrop-filter:blur(16px);
+}
+.settings-confirm-bar strong,
+.settings-confirm-bar span{
+  display:block;
+}
+.settings-confirm-bar strong{
+  color:var(--text);
+}
+.settings-confirm-bar span{
+  margin-top:4px;
+  color:var(--muted);
+  font-size:12px;
+  line-height:1.45;
+}
+.settings-confirm-bar .save-settings-button{
+  flex:0 0 auto;
+  min-width:170px;
+}
+@media(max-width:680px){
+  .settings-confirm-bar{
+    align-items:stretch;
+    flex-direction:column;
+  }
+  .settings-confirm-bar .save-settings-button{
+    width:100%;
+  }
+}
