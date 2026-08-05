@@ -3,6 +3,19 @@ const state={routes:[],filtered:[],selected:null,timer:null};
 const $=id=>document.getElementById(id);
 const els={airline:$("airline"),aircraft:$("aircraft"),departure:$("departure"),destination:$("destination"),grid:$("routeGrid"),empty:$("empty"),count:$("countPill"),title:$("resultTitle"),modal:$("modal"),modalBody:$("modalBody"),logList:$("logList"),logEmpty:$("logEmpty")};
 
+
+const airlineLogos={
+  "Saudia":"assets/logos/saudia.svg",
+  "Singapore Airlines":"assets/logos/singapore-airlines.svg",
+  "Turkish Airlines":"assets/logos/turkish-airlines.svg",
+  "Air India":"assets/logos/air-india.svg",
+  "Qatar Airways":"assets/logos/qatar-airways.svg"
+};
+function airlineLogo(name,compact=false){
+  const src=airlineLogos[name];
+  return src?`<img class="airline-logo ${compact?"compact":""}" src="${src}" alt="${escapeHtml(name)} logo">`:`<span class="badge">${escapeHtml(name)}</span>`;
+}
+
 async function init(){
   try{
     const r=await fetch("./data/routes.json");
@@ -42,7 +55,7 @@ function render(){
   els.grid.innerHTML="";els.count.textContent=`${state.filtered.length} route${state.filtered.length===1?"":"s"}`;els.empty.classList.toggle("hidden",state.filtered.length>0);
   state.filtered.forEach(x=>{
     const c=document.createElement("article");c.className="route-card";
-    c.innerHTML=`<div class="card-top"><span class="badge">${escapeHtml(x.airlineCode)} · ${escapeHtml(x.airline)}</span><span class="code">${escapeHtml(x.aircraftIcao)}</span></div>
+    c.innerHTML=`<div class="card-top">${airlineLogo(x.airline,true)}<span class="code">${escapeHtml(x.aircraftIcao)}</span></div>
     <div class="airports"><div class="airport"><b>${x.fromIata}</b><span>${escapeHtml(x.fromCity)}</span></div><div class="line"><i>✈</i></div><div class="airport right"><b>${x.toIata}</b><span>${escapeHtml(x.toCity)}</span></div></div>
     <div class="card-bottom"><div><small>Aircraft</small><strong>${escapeHtml(x.aircraft)}</strong></div><button class="primary">View flight</button></div>`;
     c.querySelector("button").onclick=()=>openRoute(x);els.grid.append(c);
@@ -51,16 +64,63 @@ function render(){
 function openRoute(x){
   state.selected=x;
   const defaultUtc=getDefaultUtcInput();
-  els.modalBody.innerHTML=`<div class="modal-content"><p class="eyebrow">${x.airlineCode} · ${escapeHtml(x.airline)}</p><h2>${escapeHtml(x.fromCity)} to ${escapeHtml(x.toCity)}</h2>
+  els.modalBody.innerHTML=`<div class="modal-content">
+  <div class="route-brand-row">${airlineLogo(x.airline)}<span class="badge">${escapeHtml(x.aircraftIcao)}</span></div>
+  <p class="eyebrow">${x.airlineCode} · ${escapeHtml(x.airline)}</p><h2>${escapeHtml(x.fromCity)} to ${escapeHtml(x.toCity)}</h2>
   <div class="modal-route"><div class="modal-airport"><b>${x.fromIata}</b><span>${x.fromIcao} · ${escapeHtml(x.fromCity)}</span></div><div>✈</div><div class="modal-airport"><b>${x.toIata}</b><span>${x.toIcao} · ${escapeHtml(x.toCity)}</span></div></div>
   <div class="detail-grid"><div class="detail"><span>AIRLINE</span><b>${escapeHtml(x.airline)}</b></div><div class="detail"><span>AIRCRAFT</span><b>${escapeHtml(x.aircraft)}</b></div><div class="detail"><span>DEPARTURE</span><b>${escapeHtml(x.fromAirport)}</b></div><div class="detail"><span>ARRIVAL</span><b>${escapeHtml(x.toAirport)}</b></div></div>
-  <div class="schedule-grid">
-    <label>Departure date and time (UTC)<div class="date-wrap"><input id="departureUtc" type="datetime-local" value="${defaultUtc}"></div></label>
-    <label>Estimated flight duration<div class="duration-row"><select id="durationHours">${durationOptions(0,18,2)}</select><select id="durationMinutes">${minuteOptions()}</select></div></label>
-  </div>
-  <p class="note">The timer uses UTC. At the selected time the status changes automatically from Waiting at gate to Departed. Progress reaches 100% at the calculated ETA.</p>
-  <div class="actions"><button id="startRoute" class="primary">Start route</button><button id="simbrief" class="secondary">Open in SimBrief</button><button id="complete" class="secondary">Mark completed</button></div></div>`;
-  $("simbrief").onclick=()=>openSimbrief(x);$("complete").onclick=()=>complete(x);$("startRoute").onclick=()=>startRoute(x);els.modal.showModal();
+
+  <section class="departure-box">
+    <div class="departure-box-head">
+      <div><span class="section-label">SCHEDULED DEPARTURE</span><strong id="departureDisplay">${formatUtc(parseUtcInput(defaultUtc))}</strong></div>
+      <button id="modifyDeparture" class="text-button">Modify</button>
+    </div>
+    <div id="departureEditor" class="schedule-grid hidden">
+      <label>Departure date and time (UTC)<div class="date-wrap"><input id="departureUtc" type="datetime-local" value="${defaultUtc}"></div></label>
+      <label>Estimated flight duration<div class="duration-row"><select id="durationHours">${durationOptions(0,18,2)}</select><select id="durationMinutes">${minuteOptions()}</select></div></label>
+    </div>
+  </section>
+
+  <p class="note">The default departure is one hour from now in UTC. Press Modify to choose another date, time, or duration.</p>
+  <div class="actions"><button id="departRoute" class="primary">Depart</button><button id="simbrief" class="secondary">Open in SimBrief</button><button id="complete" class="secondary">Mark completed</button></div>
+  <div id="confirmPanel" class="confirm-panel hidden"></div>
+  </div>`;
+
+  const editor=$("departureEditor");
+  $("modifyDeparture").onclick=()=>{
+    editor.classList.toggle("hidden");
+    $("modifyDeparture").textContent=editor.classList.contains("hidden")?"Modify":"Done";
+  };
+  $("departureUtc").onchange=updateDeparturePreview;
+  $("durationHours").onchange=updateDeparturePreview;
+  $("durationMinutes").onchange=updateDeparturePreview;
+  $("simbrief").onclick=()=>openSimbrief(x);
+  $("complete").onclick=()=>complete(x);
+  $("departRoute").onclick=()=>showDepartureConfirmation(x);
+  els.modal.showModal();
+}
+function updateDeparturePreview(){
+  const ms=parseUtcInput($("departureUtc").value);
+  if(Number.isFinite(ms))$("departureDisplay").textContent=formatUtc(ms);
+}
+function showDepartureConfirmation(x){
+  const departureMs=parseUtcInput($("departureUtc").value);
+  const durationMinutes=Number($("durationHours").value)*60+Number($("durationMinutes").value);
+  if(!Number.isFinite(departureMs)){alert("Choose a valid UTC departure date and time.");return}
+  if(durationMinutes<=0){alert("Choose a flight duration longer than zero.");return}
+  const etaMs=departureMs+durationMinutes*60000;
+  const panel=$("confirmPanel");
+  panel.innerHTML=`<div class="confirm-head"><div><span class="section-label">CONFIRM DEPARTURE</span><strong>${x.fromIata} → ${x.toIata}</strong></div><button id="closeConfirm" class="text-button">Cancel</button></div>
+  <div class="confirm-grid"><div><span>Departure</span><b>${formatUtc(departureMs)}</b></div><div><span>ETA</span><b>${formatUtc(etaMs)}</b></div><div><span>Aircraft</span><b>${escapeHtml(x.aircraft)}</b></div></div>
+  <button id="confirmDeparture" class="primary confirm-button">Confirm departure</button>`;
+  panel.classList.remove("hidden");
+  $("closeConfirm").onclick=()=>panel.classList.add("hidden");
+  $("confirmDeparture").onclick=()=>startRouteWithValues(x,departureMs,durationMinutes);
+}
+function startRouteWithValues(x,departureMs,durationMinutes){
+  const active={...x,id:crypto.randomUUID?crypto.randomUUID():String(Date.now()),departureMs,durationMinutes,etaMs:departureMs+durationMinutes*60000,createdAt:Date.now()};
+  localStorage.setItem("aeroroster-active-flight",JSON.stringify(active));
+  els.modal.close();renderActiveFlight();switchView("flight");
 }
 function durationOptions(start,end,selected){
   let html="";for(let i=start;i<=end;i++)html+=`<option value="${i}" ${i===selected?"selected":""}>${i} hour${i===1?"":"s"}</option>`;return html;
@@ -76,15 +136,6 @@ function parseUtcInput(value){
   const m=value.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/);
   if(!m)return NaN;
   return Date.UTC(Number(m[1]),Number(m[2])-1,Number(m[3]),Number(m[4]),Number(m[5]));
-}
-function startRoute(x){
-  const departureMs=parseUtcInput($("departureUtc").value);
-  const durationMinutes=Number($("durationHours").value)*60+Number($("durationMinutes").value);
-  if(!Number.isFinite(departureMs)){alert("Choose a valid UTC departure date and time.");return}
-  if(durationMinutes<=0){alert("Choose a flight duration longer than zero.");return}
-  const active={...x,id:crypto.randomUUID?crypto.randomUUID():String(Date.now()),departureMs,durationMinutes,etaMs:departureMs+durationMinutes*60000,createdAt:Date.now()};
-  localStorage.setItem("aeroroster-active-flight",JSON.stringify(active));
-  els.modal.close();renderActiveFlight();switchView("flight");
 }
 function getActiveFlight(){try{return JSON.parse(localStorage.getItem("aeroroster-active-flight")||"null")}catch{return null}}
 function renderActiveFlight(){
@@ -104,7 +155,7 @@ function renderActiveFlight(){
   }else{
     status="Arrived";statusClass="arrived";countdownLabel="Completed";countdownValue=formatUtc(x.etaMs);
   }
-  content.innerHTML=`<div class="flight-status-head"><div><p class="eyebrow">${escapeHtml(x.airlineCode)} · ${escapeHtml(x.airline)} · ${escapeHtml(x.aircraftIcao)}</p><h2>${escapeHtml(x.fromCity)} to ${escapeHtml(x.toCity)}</h2></div><span class="status-badge ${statusClass}">${status}</span></div>
+  content.innerHTML=`<div class="flight-status-head"><div><div class="active-brand">${airlineLogo(x.airline)}<span class="badge">${escapeHtml(x.aircraftIcao)}</span></div><p class="eyebrow">${escapeHtml(x.airlineCode)} · ${escapeHtml(x.airline)}</p><h2>${escapeHtml(x.fromCity)} to ${escapeHtml(x.toCity)}</h2></div><span class="status-badge ${statusClass}">${status}</span></div>
   <div class="live-route"><div class="live-airport"><b>${x.fromIata}</b><span>${escapeHtml(x.fromCity)}</span></div>
   <div class="progress-wrap"><div class="progress-plane" style="left:${progress*100}%">✈</div><div class="progress-track"><div class="progress-fill" style="width:${progress*100}%"></div></div></div>
   <div class="live-airport right"><b>${x.toIata}</b><span>${escapeHtml(x.toCity)}</span></div></div>

@@ -41,3 +41,14 @@ Edit `data/routes.json`. Duplicate an existing object and replace the airline, a
 ## Accuracy note
 
 The included data contains 413 curated route-aircraft combinations for personal flight simulation, not a live airline schedule. Aircraft substitutions and seasonal changes are normal. Verify exact aircraft assignments before a flight when strict realism matters.
+
+## Updated departure workflow
+
+1. Open a route.
+2. Review the default UTC departure time.
+3. Press **Modify** to change the date, time or estimated duration.
+4. Press **Depart**.
+5. Review the confirmation summary.
+6. Press **Confirm departure** to start the active flight.
+
+Local airline logo assets are stored in `assets/logos`.

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 100">
+<rect width="420" height="100" rx="18" fill="#0a1f44"/>
+<path d="M37 66c8-28 19-43 38-49-7 18-5 34 7 51-18-8-31-9-45-2z" fill="#f4b41a"/>
+<path d="M51 55c8-12 16-21 27-27-3 10-2 20 5 31-11-5-21-6-32-4z" fill="#0a1f44"/>
+<text x="104" y="46" font-family="Georgia, serif" font-size="24" font-weight="700" fill="#f4b41a">SINGAPORE</text>
+<text x="104" y="73" font-family="Arial, sans-serif" font-size="23" font-weight="700" fill="#ffffff">AIRLINES</text>
+</svg>
