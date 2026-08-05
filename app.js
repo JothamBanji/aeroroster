@@ -156,15 +156,96 @@ function renderDetails(r){
 
 function openRouteDialog(r){
   const departure=defaultUtcInput(),duration=durationTotal(r);
-  $('dialogBody').innerHTML=`<div class="dialog-content"><div class="dialog-brand"><img src="${logoMap[r.airline]}" alt="${escapeHtml(r.airline)} logo"><span>${r.custom?'<b class="custom-route-badge">CUSTOM ROUTE</b>':''}</span></div><h2>${r.fromIata} → ${r.toIata}</h2><p>${escapeHtml(r.fromCity)} to ${escapeHtml(r.toCity)} · ${escapeHtml(r.aircraft)}</p><div class="dialog-route"><div><strong>${r.fromIata}</strong><span>${escapeHtml(r.fromAirport)}</span></div><b>✈</b><div class="right"><strong>${r.toIata}</strong><span>${escapeHtml(r.toAirport)}</span></div></div><div class="dialog-info-grid"><div><span>Flight number</span><strong>${escapeHtml(displayFlightNumber(r))}</strong></div><div><span>Aircraft</span><strong>${escapeHtml(r.aircraftIcao)}</strong></div><div><span>Estimated duration</span><strong>${estimatedDuration(r)}</strong></div><div><span>Direction</span><strong>${r.custom?'Custom':r.direction==='return'?'Return':'Outbound'}</strong></div></div><div id="primaryDialogActions" class="dialog-actions"><button id="scheduleFlightButton" class="schedule-button">Schedule Flight</button><button id="dialogSimbrief" class="outline-button">Open SimBrief</button><button id="dialogLog" class="outline-button">Log Now</button></div><section id="schedulePanel" class="schedule-box hidden"><div class="schedule-head"><div><span>Scheduled departure</span><strong id="departurePreview">${formatUtc(parseUtc(departure))}</strong></div><button id="modifySchedule">Modify</button></div><div id="scheduleFields" class="schedule-fields hidden"><label>Departure UTC<input id="departureUtc" type="datetime-local" value="${departure}"></label><label>Duration<div><select id="durationHours">${hourOptions(Math.floor(duration/60))}</select><select id="durationMinutes">${minuteOptions(duration%60)}</select></div></label></div><button id="departButton" class="schedule-button">Depart</button><div id="confirmBox" class="confirm-box hidden"></div></section></div>`;
-  $('scheduleFlightButton').onclick=()=>{$('schedulePanel').classList.remove('hidden');$('primaryDialogActions').classList.add('hidden');};
-  $('modifySchedule').onclick=()=>{$('scheduleFields').classList.toggle('hidden');$('modifySchedule').textContent=$('scheduleFields').classList.contains('hidden')?'Modify':'Done';};
-  $('departureUtc').onchange=()=>{$('departurePreview').textContent=formatUtc(parseUtc($('departureUtc').value));};
-  $('dialogSimbrief').onclick=()=>openSimbrief(r);$('dialogLog').onclick=()=>quickLog(r);$('departButton').onclick=()=>showConfirm(r);$('routeDialog').showModal();
+  const initialFlightNumber=r.flightNumber||'';
+  $('dialogBody').innerHTML=`<div class="dialog-content">
+    <div class="dialog-brand">
+      <div class="dialog-logo-tile"><img src="${logoMap[r.airline]}" alt="${escapeHtml(r.airline)} logo"></div>
+      <div class="dialog-brand-copy">
+        <span>${escapeHtml(r.airline)}</span>
+        <small>${escapeHtml(r.airlineCode)} · ${escapeHtml(r.aircraftIcao)}</small>
+      </div>
+      ${r.custom?'<b class="custom-route-badge">CUSTOM ROUTE</b>':''}
+    </div>
+    <h2>${r.fromIata} → ${r.toIata}</h2>
+    <p>${escapeHtml(r.fromCity)} to ${escapeHtml(r.toCity)} · ${escapeHtml(r.aircraft)}</p>
+    <div class="dialog-route">
+      <div><strong>${r.fromIata}</strong><span>${escapeHtml(r.fromAirport)}</span></div>
+      <b>✈</b>
+      <div class="right"><strong>${r.toIata}</strong><span>${escapeHtml(r.toAirport)}</span></div>
+    </div>
+    <div class="dialog-info-grid">
+      <div><span>Flight number</span><strong id="dialogFlightDisplay">${escapeHtml(initialFlightNumber||'Not available')}</strong></div>
+      <div><span>Aircraft</span><strong>${escapeHtml(r.aircraftIcao)}</strong></div>
+      <div><span>Estimated duration</span><strong>${estimatedDuration(r)}</strong></div>
+      <div><span>Direction</span><strong>${r.custom?'Custom':r.direction==='return'?'Return':'Outbound'}</strong></div>
+    </div>
+    <div id="primaryDialogActions" class="dialog-actions">
+      <button id="scheduleFlightButton" class="schedule-button">Schedule Flight</button>
+      <button id="dialogSimbrief" class="outline-button">Open SimBrief</button>
+      <button id="dialogLog" class="outline-button">Log Now</button>
+    </div>
+    <section id="schedulePanel" class="schedule-box hidden">
+      <div class="schedule-head">
+        <div><span>Scheduled departure</span><strong id="departurePreview">${formatUtc(parseUtc(departure))}</strong></div>
+        <button id="modifySchedule" class="text-button">Modify</button>
+      </div>
+      <div id="scheduleFields" class="schedule-fields hidden">
+        <label>Departure UTC<input id="departureUtc" type="datetime-local" value="${departure}"></label>
+        <label>Duration<div class="duration-pair"><select id="durationHours">${hourOptions(Math.floor(duration/60))}</select><select id="durationMinutes">${minuteOptions(duration%60)}</select></div></label>
+        <label class="flight-number-field">Flight number
+          <input id="flightNumberInput" type="text" maxlength="10" value="${escapeHtml(initialFlightNumber)}" placeholder="Example: TK760" autocomplete="off">
+          <small>Enter or replace the real airline flight number. It will be saved and sent to SimBrief.</small>
+        </label>
+      </div>
+      <button id="departButton" class="schedule-button full-width-button">Depart</button>
+      <div id="confirmBox" class="confirm-box hidden"></div>
+    </section>
+  </div>`;
+
+  $('scheduleFlightButton').onclick=()=>{
+    $('schedulePanel').classList.remove('hidden');
+    $('primaryDialogActions').classList.add('hidden');
+  };
+
+  $('modifySchedule').onclick=()=>{
+    $('scheduleFields').classList.toggle('hidden');
+    $('modifySchedule').textContent=$('scheduleFields').classList.contains('hidden')?'Modify':'Done';
+  };
+
+  $('departureUtc').onchange=()=>{
+    $('departurePreview').textContent=formatUtc(parseUtc($('departureUtc').value));
+  };
+
+  $('flightNumberInput').oninput=()=>{
+    const value=normalizeFlight($('flightNumberInput').value);
+    $('flightNumberInput').value=value;
+    $('dialogFlightDisplay').textContent=value||'Not available';
+  };
+
+  $('dialogSimbrief').onclick=()=>openSimbrief(r);
+  $('dialogLog').onclick=()=>quickLog({...r,flightNumber:normalizeFlight($('flightNumberInput')?.value||r.flightNumber||'')});
+  $('departButton').onclick=()=>showConfirm(r);
+  $('routeDialog').showModal();
 }
 function showConfirm(r){
-  const departureMs=parseUtc($('departureUtc').value),duration=Number($('durationHours').value)*60+Number($('durationMinutes').value),flight=normalizeFlight(r.flightNumber||'');if(!Number.isFinite(departureMs)||duration<=0){alert('Choose a valid UTC departure and duration.');return}const eta=departureMs+duration*60000;
-  $('confirmBox').innerHTML=`<strong>Confirm departure</strong><div class="confirm-grid"><div><span>Departure</span><strong>${formatUtc(departureMs)}</strong></div><div><span>ETA</span><strong>${formatUtc(eta)}</strong></div><div><span>Flight</span><strong>${escapeHtml(flight||'Not available')}</strong></div><div><span>Aircraft</span><strong>${escapeHtml(r.aircraftIcao)}</strong></div></div><button id="confirmDeparture" class="confirm-button">Confirm Departure</button>`;$('confirmBox').classList.remove('hidden');$('confirmDeparture').onclick=()=>startFlight(r,departureMs,duration,flight);
+  const departureMs=parseUtc($('departureUtc').value);
+  const duration=Number($('durationHours').value)*60+Number($('durationMinutes').value);
+  const flight=normalizeFlight($('flightNumberInput')?.value||r.flightNumber||'');
+  if(!Number.isFinite(departureMs)||duration<=0){
+    alert('Choose a valid UTC departure and duration.');
+    return;
+  }
+  const eta=departureMs+duration*60000;
+  $('confirmBox').innerHTML=`<strong>Confirm departure</strong>
+    <div class="confirm-grid">
+      <div><span>Departure</span><strong>${formatUtc(departureMs)}</strong></div>
+      <div><span>ETA</span><strong>${formatUtc(eta)}</strong></div>
+      <div><span>Flight</span><strong>${escapeHtml(flight||'Not available')}</strong></div>
+      <div><span>Aircraft</span><strong>${escapeHtml(r.aircraftIcao)}</strong></div>
+    </div>
+    <button id="confirmDeparture" class="confirm-button full-width-button">Confirm Departure</button>`;
+  $('confirmBox').classList.remove('hidden');
+  $('confirmDeparture').onclick=()=>startFlight({...r,flightNumber:flight},departureMs,duration,flight);
 }
 function startFlight(r,departureMs,durationMinutes,flightNumber){localStorage.setItem('aeroroster-active-flight',JSON.stringify({...r,departureMs,durationMinutes,etaMs:departureMs+durationMinutes*60000,flightNumber,id:crypto.randomUUID?.()||String(Date.now())}));$('routeDialog').close();renderActive();switchView('active');}
 function renderActive(){
@@ -177,7 +258,31 @@ function quickLog(r){const log=getLog();log.unshift({...r,id:crypto.randomUUID?.
 function renderLogbook(){const log=getLog();$('metricFlights').textContent=log.length;$('metricAirlines').textContent=new Set(log.map(x=>x.airline)).size;$('metricAircraft').textContent=new Set(log.map(x=>x.aircraftIcao)).size;$('emptyLogbook').classList.toggle('hidden',log.length>0);$('logbookList').innerHTML=log.map(x=>`<div class="log-row"><div><strong>${x.fromIata} → ${x.toIata}</strong><span>${escapeHtml(x.fromCity)} to ${escapeHtml(x.toCity)}</span></div><div><strong>${escapeHtml(x.airline)}</strong><span>${escapeHtml(x.flightNumber||x.airlineCode)}</span></div><div><strong>${escapeHtml(x.aircraftIcao)}</strong><span>${new Date(x.completedAt).toLocaleString()}</span></div><button data-id="${x.id}">Delete</button></div>`).join('');document.querySelectorAll('#logbookList button').forEach(b=>b.onclick=()=>{localStorage.setItem('aeroroster-logbook',JSON.stringify(getLog().filter(x=>x.id!==b.dataset.id)));renderLogbook();renderDashboard();});}
 function renderDashboard(){const log=getLog();$('dashboardMetrics').innerHTML=`<div><span>Routes available</span><strong>${state.routes.length||0}</strong></div><div><span>Flights completed</span><strong>${log.length}</strong></div><div><span>Airlines flown</span><strong>${new Set(log.map(x=>x.airline)).size}</strong></div>`;$('statisticsContent').innerHTML=`<div class="metric-row"><div><span>Unique aircraft</span><strong>${new Set(log.map(x=>x.aircraftIcao)).size}</strong></div><div><span>Unique destinations</span><strong>${new Set(log.map(x=>x.toIata)).size}</strong></div><div><span>Active flight</span><strong>${getActive()?'1':'0'}</strong></div></div>`;}
 function switchView(name){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active-view'));const map={finder:'finderView',active:'activeView',logbook:'logbookView',dashboard:'dashboardView',statistics:'statisticsView',settings:'settingsView'};$(map[name]||'finderView').classList.add('active-view');document.querySelectorAll('.side-link').forEach(b=>b.classList.toggle('active',b.dataset.view===name));$('sidebar').classList.remove('open');window.scrollTo({top:0,behavior:'smooth'});}
-function openSimbrief(r){let departureMs=Number(r.departureMs)||parseUtc($('departureUtc')?.value||defaultUtcInput()),duration=Number(r.durationMinutes)||Number($('durationHours')?.value||durationHours(r))*60+Number($('durationMinutes')?.value||durationMinutes(r)),flight=normalizeFlight(r.flightNumber||'');const d=new Date(departureMs),num=flight.replace(/\D/g,'');const p=new URLSearchParams({orig:r.fromIcao,dest:r.toIcao,type:r.aircraftIcao,airline:r.airlineIcao,date:simbriefDate(d),deph:String(d.getUTCHours()).padStart(2,'0'),depm:String(d.getUTCMinutes()).padStart(2,'0'),steh:String(Math.floor(duration/60)),stem:String(duration%60).padStart(2,'0')});if(num){p.set('fltnum',num);p.set('callsign',`${r.airlineIcao}${num}`)}window.open(`https://dispatch.simbrief.com/options/custom?${p.toString()}`,'_blank','noopener,noreferrer');}
+function openSimbrief(r){
+  const departureMs=Number(r.departureMs)||parseUtc($('departureUtc')?.value||defaultUtcInput());
+  const duration=Number(r.durationMinutes)||
+    Number($('durationHours')?.value||durationHours(r))*60+
+    Number($('durationMinutes')?.value||durationMinutes(r));
+  const flight=normalizeFlight($('flightNumberInput')?.value||r.flightNumber||'');
+  const d=new Date(departureMs);
+  const num=flight.replace(/\D/g,'');
+  const p=new URLSearchParams({
+    orig:r.fromIcao,
+    dest:r.toIcao,
+    type:r.aircraftIcao,
+    airline:r.airlineIcao,
+    date:simbriefDate(d),
+    deph:String(d.getUTCHours()).padStart(2,'0'),
+    depm:String(d.getUTCMinutes()).padStart(2,'0'),
+    steh:String(Math.floor(duration/60)),
+    stem:String(duration%60).padStart(2,'0')
+  });
+  if(num){
+    p.set('fltnum',num);
+    p.set('callsign',`${r.airlineIcao}${num}`);
+  }
+  window.open(`https://dispatch.simbrief.com/options/custom?${p.toString()}`,'_blank','noopener,noreferrer');
+}
 function estimatedDuration(r){const mins=durationTotal(r);return `${Math.floor(mins/60)}h ${String(mins%60).padStart(2,'0')}m`;}
 function durationTotal(r){const seed=(r.fromIata.charCodeAt(0)+r.toIata.charCodeAt(1)+r.aircraftIcao.length*17)%600;return Math.max(75,Math.min(850,90+seed));}
 function durationHours(r){return Math.floor(durationTotal(r)/60)}function durationMinutes(r){return Math.round((durationTotal(r)%60)/15)*15%60}

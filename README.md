@@ -48,3 +48,10 @@ Aircraft assignments and flight numbers can vary by date and operating schedule.
 - Custom Route mode lets you select any two airports found in the chosen airline's network and use any aircraft in that airline's stored fleet.
 - Custom routes export normally to SimBrief and can be scheduled, tracked, and logged.
 - A return route only carries a flight number when a separate return number is stored. The app does not invent flight numbers.
+
+
+## Route Finder and flight-number fix
+
+- Airline logos now use fixed high-contrast tiles and no longer overlap or distort Route Finder text.
+- The scheduling editor includes a manual flight-number field.
+- The entered number is shown in confirmation, saved with the active flight and sent to SimBrief.
