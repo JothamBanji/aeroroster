@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 100">
+<rect width="360" height="100" rx="18" fill="#fff7f8"/>
+<path d="M26 73L52 25h43L72 73z" fill="#d71920"/>
+<path d="M51 67l16-31h15L66 67z" fill="#6f1d5c"/>
+<text x="112" y="62" font-family="Arial, sans-serif" font-size="32" font-weight="700" fill="#d71920">AIR INDIA</text>
+<path d="M302 27h28l-14 22z" fill="#b4935a"/>
+</svg>
