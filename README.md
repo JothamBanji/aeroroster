@@ -87,3 +87,8 @@ Custom Route mode now searches 72,454 non-closed airports and airfields worldwid
 - Active-flight maps include Street and Satellite layer controls.
 - Added a local AeroRoster profile/PIN login screen.
 - Added a live UTC clock in the top-right corner.
+
+
+## AeroRoster Operations Center v3
+
+This build adds a flight briefing page, personal fleet registrations, manual flight milestones, arrival reports, advanced logbook filters/exports, worldwide flight-history map, airport explorer with METAR/TAF lookup, expanded SimBrief briefing data, ATC callsigns, route favorites, random flight generator, achievements/statistics and a richer post-login dashboard.

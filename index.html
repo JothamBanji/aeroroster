@@ -52,6 +52,10 @@
         <button class="side-link" data-view="active"><span>➤</span>Active Flight</button>
         <button class="side-link" data-view="logbook"><span>▣</span>Logbook</button>
         <button class="side-link" data-view="statistics"><span>▥</span>Statistics</button>
+        <button class="side-link" data-view="briefing"><span>▤</span>Flight Briefing</button>
+        <button class="side-link" data-view="fleet"><span>◈</span>Fleet</button>
+        <button class="side-link" data-view="history"><span>◎</span>Flight Map</button>
+        <button class="side-link" data-view="airports"><span>⌖</span>Airports</button>
         <button class="side-link" data-view="settings"><span>⚙</span>Settings</button>
       </div>
 
@@ -161,8 +165,16 @@
           <section class="content-card"><div id="logbookList"></div><div id="emptyLogbook" class="empty-message">No flights have been logged yet.</div></section>
         </section>
 
-        <section id="dashboardView" class="view simple-view"><h2>Dashboard</h2><p>Your route statistics and recent flights appear here.</p><div id="dashboardMetrics" class="metric-row"></div></section>
-        <section id="statisticsView" class="view simple-view"><h2>Statistics</h2><p>Flight and route statistics from this browser.</p><div id="statisticsContent" class="content-card"></div></section>
+        <section id="dashboardView" class="view simple-view ops-dashboard-view">
+          <div id="dashboardMetrics" class="metric-row hidden"></div>
+          <div id="opsDashboard"></div>
+        </section>
+        <section id="statisticsView" class="view simple-view"><div id="advancedStatistics"></div><div id="statisticsContent" class="content-card hidden"></div></section>
+
+        <section id="briefingView" class="view simple-view"><div id="briefingContent"></div></section>
+        <section id="fleetView" class="view simple-view"><div id="fleetContent"></div></section>
+        <section id="historyView" class="view simple-view"><div class="advanced-page-head"><div><span>FLIGHT HISTORY</span><h2>Your flights around the world</h2><p>Every logged route on one map.</p></div></div><div id="historyMap" class="history-map"></div><div id="historyMapEmpty" class="empty-message hidden">Log some flights to build your history map.</div></section>
+        <section id="airportsView" class="view simple-view"><div id="airportExplorer"></div></section>
         <section id="settingsView" class="view settings-view">
           <div class="page-heading settings-heading">
             <div><span>PREFERENCES</span><h2>Settings</h2><p>Personalize the planner. Settings are saved in this browser.</p></div>
@@ -244,5 +256,6 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script src="app.js"></script>
+  <script src="advanced.js"></script>
 </body>
 </html>
