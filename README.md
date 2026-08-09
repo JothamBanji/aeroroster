@@ -76,3 +76,14 @@ Aircraft assignments and flight numbers can vary by date and operating schedule.
 ## Worldwide custom airport selection
 
 Custom Route mode now searches 72,454 non-closed airports and airfields worldwide. The selected airline controls the airline and aircraft only; it no longer restricts the available departure or arrival airports.
+
+
+## Operations update
+
+- **Depart now** records the actual departure time and automatically calculates whether the flight departed early, on time, or late.
+- **Arrive now** records the actual arrival time and calculates whether the flight arrived early, on time, or late compared with the scheduled ETA.
+- Flight progress begins from the actual recorded departure, not merely the scheduled departure.
+- Finish & Log is enabled after arrival is recorded, and the logbook stores both departure and arrival performance.
+- Active-flight maps include Street and Satellite layer controls.
+- Added a local AeroRoster profile/PIN login screen.
+- Added a live UTC clock in the top-right corner.

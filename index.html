@@ -9,7 +9,36 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="app-shell">
+  <div id="loginScreen" class="login-screen">
+    <div class="login-card">
+      <div class="login-brand">
+        <div class="login-plane">✈</div>
+        <div><h1>AeroRoster</h1><p>Personal flight operations</p></div>
+      </div>
+
+      <div class="login-copy">
+        <span class="login-kicker">LOCAL PROFILE</span>
+        <h2 id="loginTitle">Welcome aboard</h2>
+        <p id="loginDescription">Create a local profile for this browser. Your PIN stays on this device.</p>
+      </div>
+
+      <label id="loginNameField" class="login-field">
+        <span>Display name</span>
+        <input id="loginName" type="text" maxlength="30" placeholder="Your name" autocomplete="name">
+      </label>
+
+      <label class="login-field">
+        <span>PIN</span>
+        <input id="loginPin" type="password" inputmode="numeric" maxlength="8" placeholder="4–8 digit PIN" autocomplete="current-password">
+      </label>
+
+      <button id="loginButton" class="login-primary" type="button">Create profile</button>
+      <button id="resetProfileButton" class="login-reset hidden" type="button">Reset local profile</button>
+      <div id="loginStatus" class="login-status" aria-live="polite"></div>
+      <p class="login-note">Personal local login only — not server-side authentication.</p>
+    </div>
+  </div>
+  <div class="app-shell" id="appShell">
     <aside class="sidebar" id="sidebar">
       <div class="brand-block">
         <div class="brand-icon" aria-hidden="true"><svg viewBox="0 0 64 64"><path d="M7 35 29 30 42 8c2-3 7-2 7 2l-5 19 12 7c2 1 2 5-1 6l-14 2-9 13c-2 3-6 1-6-2l1-11-17 3c-4 1-6-5-3-7z" fill="currentColor"/></svg></div>
@@ -45,7 +74,10 @@
       <header class="topbar">
         <button id="menuButton" class="menu-button" aria-label="Open menu">☰</button>
         <div></div>
-        <div class="top-actions"><span class="utc-chip">◷ UTC</span><div class="avatar">●</div></div>
+        <div class="top-actions">
+          <span id="liveUtcClock" class="utc-chip">UTC --:--:--</span>
+          <div class="profile-chip"><span id="profileName">Pilot</span><button id="logoutButton" type="button" title="Lock AeroRoster">↪</button></div>
+        </div>
       </header>
 
       <main>
@@ -162,6 +194,20 @@
               <label class="settings-toggle"><input id="settingRememberAirline" type="checkbox" checked><span><b>Remember selected airline</b><small>Restore the last airline when the site opens.</small></span></label>
             </section>
 
+
+            <section class="settings-card">
+              <div class="settings-card-heading">
+                <div class="settings-icon">⌖</div>
+                <div><h3>Map</h3><p>Choose the default active-flight map style.</p></div>
+              </div>
+              <label class="settings-field">
+                <span>Default map view</span>
+                <select id="settingMapStyle">
+                  <option value="street">Street</option>
+                  <option value="satellite">Satellite</option>
+                </select>
+              </label>
+            </section>
 
             <section class="settings-card simbrief-settings-card">
               <div class="settings-card-heading"><div class="settings-icon">SB</div><div><h3>SimBrief integration</h3><p>Import your latest generated operational flight plan.</p></div></div>
