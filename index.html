@@ -257,5 +257,16 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script src="app.js"></script>
   <script src="advanced.js"></script>
+  <script>
+    // Navigation safety binding for extended Operations Center pages.
+    window.addEventListener('DOMContentLoaded', function () {
+      document.querySelectorAll('.side-link[data-view]').forEach(function (button) {
+        button.addEventListener('click', function () {
+          var view = button.getAttribute('data-view');
+          if (typeof window.switchView === 'function') window.switchView(view);
+        });
+      });
+    });
+  </script>
 </body>
 </html>
