@@ -92,3 +92,8 @@ Custom Route mode now searches 72,454 non-closed airports and airfields worldwid
 ## AeroRoster Operations Center v3
 
 This build adds a flight briefing page, personal fleet registrations, manual flight milestones, arrival reports, advanced logbook filters/exports, worldwide flight-history map, airport explorer with METAR/TAF lookup, expanded SimBrief briefing data, ATC callsigns, route favorites, random flight generator, achievements/statistics and a richer post-login dashboard.
+
+
+## Airport Explorer weather v3.2
+
+The Airport Explorer now uses Open-Meteo for browser-compatible current surface weather. The official Aviation Weather Center METAR/TAF API cannot be called directly from GitHub Pages because AWC disables cross-origin resource sharing, so AeroRoster provides a direct official aviation-weather link instead of failing the entire weather panel.

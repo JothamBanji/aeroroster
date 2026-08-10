@@ -68,7 +68,125 @@ function advMostCommon(arr){const c={};arr.filter(Boolean).forEach(x=>c[x]=(c[x]
 function renderHistoryMap(){const el=$('historyMap');if(!el||typeof L==='undefined')return;if(advancedState.historyMap){advancedState.historyMap.remove();advancedState.historyMap=null}const log=getLog();$('historyMapEmpty')?.classList.toggle('hidden',log.length>0);if(!log.length)return;const map=L.map(el).setView([25,15],2);advancedState.historyMap=map;L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap contributors'}).addTo(map);const bounds=[];log.forEach(f=>{const a=advAirportByCode(f.fromIcao),b=advAirportByCode(f.toIcao);if(!a||!b)return;const line=L.polyline([[a.lat,a.lon],[b.lat,b.lon]],{weight:2,opacity:.55,color:getComputedStyle(document.body).getPropertyValue('--accent').trim()||'#16db73'}).addTo(map);line.bindPopup(`<b>${escapeHtml(f.flightNumber||f.airline)}</b><br>${f.fromIata} → ${f.toIata}`);bounds.push([a.lat,a.lon],[b.lat,b.lon])});if(bounds.length)map.fitBounds(bounds,{padding:[30,30]});setTimeout(()=>map.invalidateSize(),100)}
 
 function renderAirportExplorer(){const el=$('airportExplorer');if(!el)return;el.innerHTML=`<div class="advanced-page-head"><div><span>AIRPORT EXPLORER</span><h2>Airport information & weather</h2><p>Search any airport in the worldwide database.</p></div></div><div class="airport-explorer-search"><input id="airportSearchAdv" placeholder="Search by city, airport, IATA or ICAO"><div id="airportResultsAdv"></div></div><div id="airportDetailAdv"></div>`;$('airportSearchAdv').oninput=()=>{const q=$('airportSearchAdv').value.trim().toLowerCase();if(q.length<2){$('airportResultsAdv').innerHTML='';return}const matches=state.worldAirports.filter(a=>`${a.ident} ${a.iata} ${a.name} ${a.city}`.toLowerCase().includes(q)).slice(0,12);$('airportResultsAdv').innerHTML=matches.map((a,i)=>`<button data-i="${i}"><strong>${escapeHtml(a.iata||a.ident)}</strong><span>${escapeHtml(a.name)} · ${escapeHtml(a.city||a.country)}</span></button>`).join('');$('airportResultsAdv').querySelectorAll('button').forEach(b=>b.onclick=()=>showAirportDetail(matches[Number(b.dataset.i)]))}}
-async function showAirportDetail(a){const el=$('airportDetailAdv');el.innerHTML=`<div class="airport-detail-grid"><section class="adv-card"><span>AIRPORT</span><h3>${escapeHtml(a.name)}</h3><dl><dt>IATA</dt><dd>${escapeHtml(a.iata||'—')}</dd><dt>ICAO / Ident</dt><dd>${escapeHtml(a.ident)}</dd><dt>City</dt><dd>${escapeHtml(a.city||'—')}</dd><dt>Country</dt><dd>${escapeHtml(a.country||'—')}</dd><dt>Coordinates</dt><dd>${Number(a.lat).toFixed(4)}, ${Number(a.lon).toFixed(4)}</dd></dl></section><section class="adv-card"><span>WEATHER</span><div id="weatherAdv">Loading current METAR/TAF…</div></section></div>`;try{const metar=await fetch(`https://aviationweather.gov/api/data/metar?ids=${encodeURIComponent(a.ident)}&format=json`).then(r=>r.ok?r.json():[]);const taf=await fetch(`https://aviationweather.gov/api/data/taf?ids=${encodeURIComponent(a.ident)}&format=json`).then(r=>r.ok?r.json():[]);$('weatherAdv').innerHTML=`<h4>METAR</h4><code>${escapeHtml(metar?.[0]?.rawOb||metar?.[0]?.raw_text||'No METAR available')}</code><h4>TAF</h4><code>${escapeHtml(taf?.[0]?.rawTAF||taf?.[0]?.raw_text||'No TAF available')}</code>`}catch(e){$('weatherAdv').textContent='Weather could not be loaded in this browser.'}}
+async function showAirportDetail(a){
+  const el=$('airportDetailAdv');
+
+  el.innerHTML=`<div class="airport-detail-grid">
+    <section class="adv-card">
+      <span>AIRPORT</span>
+      <h3>${escapeHtml(a.name)}</h3>
+      <dl>
+        <dt>IATA</dt><dd>${escapeHtml(a.iata||'—')}</dd>
+        <dt>ICAO / Ident</dt><dd>${escapeHtml(a.ident)}</dd>
+        <dt>City</dt><dd>${escapeHtml(a.city||'—')}</dd>
+        <dt>Country</dt><dd>${escapeHtml(a.country||'—')}</dd>
+        <dt>Coordinates</dt><dd>${Number(a.lat).toFixed(4)}, ${Number(a.lon).toFixed(4)}</dd>
+      </dl>
+    </section>
+
+    <section class="adv-card weather-card-advanced">
+      <span>WEATHER</span>
+      <div id="weatherAdv"><div class="weather-loading">Loading airport weather…</div></div>
+    </section>
+  </div>`;
+
+  const weather=$('weatherAdv');
+
+  try{
+    const params=new URLSearchParams({
+      latitude:String(a.lat),
+      longitude:String(a.lon),
+      current:[
+        'temperature_2m',
+        'relative_humidity_2m',
+        'apparent_temperature',
+        'precipitation',
+        'weather_code',
+        'cloud_cover',
+        'pressure_msl',
+        'wind_speed_10m',
+        'wind_direction_10m',
+        'wind_gusts_10m'
+      ].join(','),
+      hourly:[
+        'visibility',
+        'precipitation_probability'
+      ].join(','),
+      wind_speed_unit:'kn',
+      timezone:'UTC',
+      forecast_hours:'3'
+    });
+
+    const response=await fetch(`https://api.open-meteo.com/v1/forecast?${params.toString()}`);
+    if(!response.ok)throw new Error(`Weather service returned HTTP ${response.status}`);
+
+    const data=await response.json();
+    const current=data.current||{};
+    const units=data.current_units||{};
+    const visibility=data.hourly?.visibility?.[0];
+    const rainChance=data.hourly?.precipitation_probability?.[0];
+
+    weather.innerHTML=`
+      <div class="weather-current-grid">
+        <div class="weather-main">
+          <strong>${formatWeatherValue(current.temperature_2m,units.temperature_2m,'°C')}</strong>
+          <span>${escapeHtml(describeWeatherCode(current.weather_code))}</span>
+          <small>Modelled current conditions near ${escapeHtml(a.iata||a.ident)} · UTC</small>
+        </div>
+
+        <div class="weather-stat"><span>Wind</span><strong>${formatWeatherValue(current.wind_speed_10m,units.wind_speed_10m,'kt')} ${formatWindDirection(current.wind_direction_10m)}</strong></div>
+        <div class="weather-stat"><span>Gusts</span><strong>${formatWeatherValue(current.wind_gusts_10m,units.wind_gusts_10m,'kt')}</strong></div>
+        <div class="weather-stat"><span>Pressure</span><strong>${formatWeatherValue(current.pressure_msl,units.pressure_msl,'hPa')}</strong></div>
+        <div class="weather-stat"><span>Humidity</span><strong>${formatWeatherValue(current.relative_humidity_2m,units.relative_humidity_2m,'%')}</strong></div>
+        <div class="weather-stat"><span>Cloud cover</span><strong>${formatWeatherValue(current.cloud_cover,units.cloud_cover,'%')}</strong></div>
+        <div class="weather-stat"><span>Visibility</span><strong>${visibility==null?'—':`${(Number(visibility)/1000).toFixed(1)} km`}</strong></div>
+        <div class="weather-stat"><span>Precipitation</span><strong>${formatWeatherValue(current.precipitation,units.precipitation,'mm')}</strong></div>
+        <div class="weather-stat"><span>Rain chance</span><strong>${rainChance==null?'—':`${Math.round(Number(rainChance))}%`}</strong></div>
+      </div>
+
+      <div class="aviation-weather-note">
+        <strong>METAR / TAF</strong>
+        <p>The official Aviation Weather Center blocks cross-origin browser requests. Because AeroRoster runs on GitHub Pages, its METAR/TAF API cannot be called directly from this page.</p>
+        <a href="https://aviationweather.gov/data/metar/?id=${encodeURIComponent(a.ident)}" target="_blank" rel="noopener noreferrer">Open official aviation weather ↗</a>
+      </div>`;
+  }catch(error){
+    console.error('Airport weather error:',error);
+    weather.innerHTML=`
+      <div class="weather-error">
+        <strong>Weather temporarily unavailable</strong>
+        <p>${escapeHtml(error.message||'The weather service could not be reached.')}</p>
+        <a href="https://aviationweather.gov/data/metar/?id=${encodeURIComponent(a.ident)}" target="_blank" rel="noopener noreferrer">Open official METAR / TAF ↗</a>
+      </div>`;
+  }
+}
+
+function formatWeatherValue(value,unit,fallbackUnit){
+  if(value===null||value===undefined||Number.isNaN(Number(value)))return'—';
+  const number=Number(value);
+  const formatted=Math.abs(number)>=100?Math.round(number):Math.round(number*10)/10;
+  return `${formatted} ${unit||fallbackUnit||''}`.trim();
+}
+
+function formatWindDirection(degrees){
+  const value=Number(degrees);
+  if(!Number.isFinite(value))return'';
+  const labels=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+  return labels[Math.round(value/22.5)%16];
+}
+
+function describeWeatherCode(code){
+  const labels={
+    0:'Clear',1:'Mainly clear',2:'Partly cloudy',3:'Overcast',
+    45:'Fog',48:'Rime fog',51:'Light drizzle',53:'Drizzle',55:'Heavy drizzle',
+    56:'Freezing drizzle',57:'Heavy freezing drizzle',
+    61:'Light rain',63:'Rain',65:'Heavy rain',66:'Freezing rain',67:'Heavy freezing rain',
+    71:'Light snow',73:'Snow',75:'Heavy snow',77:'Snow grains',
+    80:'Light rain showers',81:'Rain showers',82:'Heavy rain showers',
+    85:'Snow showers',86:'Heavy snow showers',
+    95:'Thunderstorm',96:'Thunderstorm with hail',99:'Severe thunderstorm with hail'
+  };
+  return labels[Number(code)]||'Current conditions';
+}
 
 // Wrap existing navigation behavior with advanced renders.
 const advOriginalSwitchView=switchView;switchView=function(name){advOriginalSwitchView(name);setTimeout(()=>{if(name==='dashboard')renderOpsDashboard();if(name==='briefing')renderBriefing(state.selected||getActive());if(name==='fleet')renderFleet();if(name==='history')renderHistoryMap();if(name==='airports')renderAirportExplorer();if(name==='statistics')renderAdvancedStatistics();if(name==='logbook')enhanceLogbook();if(name==='active')injectActiveTimeline()},30)};
