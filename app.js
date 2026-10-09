@@ -16,13 +16,19 @@ const aboutMap={
 };
 
 async function init(){
-  const [routeResponse,airportResponse,worldAirportResponse]=await Promise.all([fetch('./data/routes.json'),fetch('./data/airports.json'),fetch('./data/world-airports.json')]);
+  // Login, theme and clock work immediately; they don't need any data files.
+  applyStoredSettings();initLogin();startUtcClock();
+  // The worldwide airport list is ~11 MB, so it loads in the background instead of blocking the app.
+  state.worldAirportsReady=fetch('./data/world-airports.json')
+    .then(r=>r.ok?r.json():[])
+    .then(list=>{state.worldAirports=list;document.dispatchEvent(new Event('aeroroster:airports'));return list})
+    .catch(error=>{console.error('World airports could not be loaded:',error);return[]});
+  const [routeResponse,airportResponse]=await Promise.all([fetch('./data/routes.json'),fetch('./data/airports.json')]);
   if(!routeResponse.ok)throw new Error('Could not load route data.');
   state.baseRoutes=await routeResponse.json();
   state.airports=airportResponse.ok?await airportResponse.json():{};
-  state.worldAirports=worldAirportResponse.ok?await worldAirportResponse.json():[];
   state.routes=addReverseRoutes(state.baseRoutes);
-  applyStoredSettings();bind();bindSettings();initLogin();startUtcClock();populateAirlines();
+  bind();bindSettings();populateAirlines();
   const settings=getSettings();
   const airlines=[...new Set(state.routes.map(r=>r.airline))];
   setAirline(settings.rememberAirline&&airlines.includes(settings.lastAirline)?settings.lastAirline:'Saudia');
@@ -30,6 +36,8 @@ async function init(){
   renderSettingsSummary();renderLogbook();renderActive();renderDashboard();
   $('sidebarRouteCount').textContent=state.routes.length;
   state.timer=setInterval(renderActive,1000);
+  state.ready=true;
+  document.dispatchEvent(new Event('aeroroster:ready'));
 }
 
 function addReverseRoutes(routes){
@@ -115,6 +123,13 @@ function searchWorldAirports(direction){
   if(query.length<2){
     results.classList.add('hidden');
     results.innerHTML='';
+    return;
+  }
+
+  if(!state.worldAirports.length){
+    results.innerHTML='<div class="airport-result-empty">Loading worldwide airport database…</div>';
+    results.classList.remove('hidden');
+    state.worldAirportsReady?.then(list=>{if(list.length&&input.value.trim().toLowerCase()===query)searchWorldAirports(direction)});
     return;
   }
 
@@ -828,11 +843,13 @@ function renderLogbook(){
 function renderDashboard(){const log=getLog();$('dashboardMetrics').innerHTML=`<div><span>Routes available</span><strong>${state.routes.length||0}</strong></div><div><span>Flights completed</span><strong>${log.length}</strong></div><div><span>Airlines flown</span><strong>${new Set(log.map(x=>x.airline)).size}</strong></div>`;$('statisticsContent').innerHTML=`<div class="metric-row"><div><span>Unique aircraft</span><strong>${new Set(log.map(x=>x.aircraftIcao)).size}</strong></div><div><span>Unique destinations</span><strong>${new Set(log.map(x=>x.toIata)).size}</strong></div><div><span>Active flight</span><strong>${getActive()?'1':'0'}</strong></div></div>`;}
 function switchView(name){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active-view'));const map={finder:'finderView',active:'activeView',logbook:'logbookView',dashboard:'dashboardView',statistics:'statisticsView',briefing:'briefingView',fleet:'fleetView',history:'historyView',airports:'airportsView',settings:'settingsView'};$(map[name]||'finderView').classList.add('active-view');document.querySelectorAll('.side-link').forEach(b=>b.classList.toggle('active',b.dataset.view===name));$('sidebar').classList.remove('open');if(name==='settings')renderSettingsSummary();window.scrollTo({top:0,behavior:'smooth'});}
 function openSimbrief(r){
-  const departureMs=Number(r.departureMs)||parseUtc($('departureUtc')?.value||defaultUtcInput());
+  // Only read the scheduling form while its dialog is open; otherwise stale values from a previous route leak in.
+  const form=$('routeDialog').open?id=>$(id)?.value:()=>undefined;
+  const departureMs=Number(r.departureMs)||parseUtc(form('departureUtc')||defaultUtcInput());
   const duration=Number(r.durationMinutes)||
-    Number($('durationHours')?.value||durationHours(r))*60+
-    Number($('durationMinutes')?.value||durationMinutes(r));
-  const flight=normalizeFlight($('flightNumberInput')?.value||r.flightNumber||'');
+    Number(form('durationHours')??durationHours(r))*60+
+    Number(form('durationMinutes')??durationMinutes(r));
+  const flight=normalizeFlight((Number(r.departureMs)?r.flightNumber:form('flightNumberInput'))||r.flightNumber||'');
   const d=new Date(departureMs);
   const num=flight.replace(/\D/g,'');
   const p=new URLSearchParams({
@@ -853,10 +870,30 @@ function openSimbrief(r){
   window.open(`https://dispatch.simbrief.com/options/custom?${p.toString()}`,'_blank','noopener,noreferrer');
 }
 function estimatedDuration(r){const mins=durationTotal(r);return `${Math.floor(mins/60)}h ${String(mins%60).padStart(2,'0')}m`;}
-function durationTotal(r){const seed=(r.fromIata.charCodeAt(0)+r.toIata.charCodeAt(1)+r.aircraftIcao.length*17)%600;return Math.max(75,Math.min(850,90+seed));}
-function durationHours(r){return Math.floor(durationTotal(r)/60)}function durationMinutes(r){return Math.round((durationTotal(r)%60)/15)*15%60}
-function hourOptions(selected){let h='';for(let i=0;i<=18;i++)h+=`<option value="${i}" ${i===selected?'selected':''}>${i} hour${i===1?'':'s'}</option>`;return h}
-function minuteOptions(selected){return [0,15,30,45].map(v=>`<option value="${v}" ${v===selected?'selected':''}>${String(v).padStart(2,'0')} min</option>`).join('')}
+// Typical cruise speeds (knots) used for block-time estimates.
+const CRUISE_KTS={A20N:450,A320:450,A21N:450,B738:450,B38M:450,A333:470,B788:485,B789:485,B78X:485,A359:485,A35K:485,B77W:490,A388:490};
+function routeCoordinates(r){
+  const a=r.customCoordinates?.from||state.airports[r.fromIata]||findWorldAirport(r.fromIcao);
+  const b=r.customCoordinates?.to||state.airports[r.toIata]||findWorldAirport(r.toIcao);
+  return a&&b&&Number.isFinite(+a.lat)&&Number.isFinite(+b.lat)?[a,b]:null;
+}
+function routeDistanceNm(r){
+  const c=routeCoordinates(r);if(!c)return 0;const [a,b]=c;
+  const p1=toRad(a.lat),p2=toRad(b.lat),dp=p2-p1,dl=toRad(b.lon-a.lon);
+  const h=Math.sin(dp/2)**2+Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)**2;
+  return 3440.065*2*Math.atan2(Math.sqrt(h),Math.sqrt(1-h));
+}
+function durationTotal(r){
+  const nm=routeDistanceNm(r);
+  if(!nm)return 120;
+  // airway routing adds ~5%; ~40 min covers taxi, climb, approach and landing
+  const minutes=nm*1.05/(CRUISE_KTS[r.aircraftIcao]||470)*60+40;
+  return Math.max(45,Math.round(minutes/5)*5);
+}
+function findWorldAirport(icao){const q=normalizeCode(icao);return q?state.worldAirports.find(a=>a.ident===q):null}
+function durationHours(r){return Math.floor(durationTotal(r)/60)}function durationMinutes(r){return durationTotal(r)%60}
+function hourOptions(selected){let h='';for(let i=0;i<=20;i++)h+=`<option value="${i}" ${i===selected?'selected':''}>${i} hour${i===1?'':'s'}</option>`;return h}
+function minuteOptions(selected){return Array.from({length:12},(_,i)=>i*5).map(v=>`<option value="${v}" ${v===selected?'selected':''}>${String(v).padStart(2,'0')} min</option>`).join('')}
 function defaultUtcInput(){const settings=getSettings();const d=new Date(Date.now()+Number(settings.departureOffset||60)*60000);return `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}T${String(d.getUTCHours()).padStart(2,'0')}:${String(d.getUTCMinutes()).padStart(2,'0')}`}
 function parseUtc(v){const m=String(v).match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/);return m?Date.UTC(+m[1],+m[2]-1,+m[3],+m[4],+m[5]):NaN}
 function formatUtc(ms){const settings=getSettings();const local=settings.timeZone==='local';return new Intl.DateTimeFormat('en-GB',{timeZone:local?undefined:'UTC',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date(ms))+(local?' local':' UTC')}
@@ -969,7 +1006,7 @@ function parseSimbriefOfp(raw){
     waypoints
   };
 }
-function findAirportByIcao(i){return Object.values(state.airports).find(a=>normalizeCode(a.icao)===normalizeCode(i))}function normalizeCode(v){return String(v||'').trim().toUpperCase()}function getImportedSimbrief(){try{return JSON.parse(localStorage.getItem('aeroroster-simbrief-ofp')||'null')}catch{return null}}function setSimbriefStatus(m,t){const e=$('simbriefImportStatus');if(e){e.textContent=m;e.className=`simbrief-status ${t||''}`.trim()}}
+function findAirportByIcao(i){return Object.values(state.airports).find(a=>normalizeCode(a.icao)===normalizeCode(i))||findWorldAirport(i)}function normalizeCode(v){return String(v||'').trim().toUpperCase()}function getImportedSimbrief(){try{return JSON.parse(localStorage.getItem('aeroroster-simbrief-ofp')||'null')}catch{return null}}function setSimbriefStatus(m,t){const e=$('simbriefImportStatus');if(e){e.textContent=m;e.className=`simbrief-status ${t||''}`.trim()}}
 
 
 function startUtcClock(){
