@@ -415,3 +415,11 @@ body.compact-layout .details-card,body.compact-layout .popular-card,body.compact
 .aviation-weather-note p,.weather-error p{margin:6px 0 10px}
 .aviation-weather-note a,.weather-error a{color:var(--accent);font-weight:700;text-decoration:none}
 @media(max-width:580px){.weather-current-grid{grid-template-columns:1fr}}
+
+/* ---- Fixes (Oct 2026) ---- */
+/* --accent was used by ~all primary buttons, the login logo and map lines but never defined,
+   so those elements rendered transparent. Derive it from the theme's green (accent classes override --green). */
+body{--accent:var(--green)}
+/* Route Finder overflowed to ~750px on phones: a plain 1fr grid column can't shrink below the route table's min-width. */
+.finder-layout>*,.bottom-grid>*{min-width:0}
+@media(max-width:1180px){.finder-layout,.bottom-grid{grid-template-columns:minmax(0,1fr)}}
